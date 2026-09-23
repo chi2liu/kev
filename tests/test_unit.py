@@ -199,6 +199,17 @@ def test_rows_per_pass_is_a_token_budget():
     assert rows_per_pass([[0] * 8192], prefix_len=8192) == 1               # a maximal row still runs
 
 
+def test_graph_buckets_and_length_groups():
+    """kev.cuda_graphs pads batched passes: counts to count_bucket (under half extra), token lengths to bucket (under a
+    quarter), and length_groups keeps one long item from padding a whole large batch while never splitting a small one."""
+    from kev.cuda_graphs import bucket, count_bucket, length_groups
+    assert [count_bucket(n) for n in (1, 3, 5, 7, 9, 13, 17, 25)] == [1, 3, 6, 8, 12, 16, 24, 32]
+    assert all(n <= count_bucket(n) < 1.5 * n for n in range(2, 200)) and all(n <= bucket(n) < max(1.25 * n, n + 16) for n in range(1, 5000))
+    assert length_groups([40, 20, 35, 30, 25, 45], 32) == [[1, 4, 3, 2, 0, 5]]            # a small pass stays whole
+    assert length_groups([30] * 20 + [900], 32) == [list(range(20)), [20]]               # the outlier gets its own pass
+    assert [len(g) for g in length_groups([100] * 40, 16)] == [16, 16, 8]                # capped per pass
+
+
 def test_bearer_auth_and_request_id(monkeypatch):
     """KEV_API_KEY (kev.serve.API_KEY) gates /v1/*; every response carries the request id the TypeSafe clients read."""
     from fastapi.testclient import TestClient

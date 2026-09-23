@@ -386,5 +386,50 @@ class DecisionModel(nn.Module):
             cache.crop(-(len(enc["ids"]) - Ls))
         return [F.softmax(z, -1).cpu() for z in self._readout(h, enc)]
 
+    @torch.no_grad()
+    def probs_batch(self, encs, prefixes):
+        """Several requests at once (kev.serve's model thread), prefixes[i] = request i's cached state prefix or None.
+        -> (probs per request, prefix per request). With CUDA graphs the requests whose state and rows fit the graphed
+        passes share one state pass (their distinct new states) and one row pass (all their questions); the rest, and every
+        other backend, run one at a time. Rows are independent, so a request gets the same answers either way."""
+        from .cuda_graphs import BANK_WIDTH, GRAPH_ROW, GRAPH_STATE, GRAPH_STATES, bucket, length_groups
+        splits = [rows_of(e) for e in encs]
+        batched = [i for i, (S, _, rows) in enumerate(splits) if self.graphs is not None and bucket(max(len(r["ids"]) for r in rows)) <= GRAPH_ROW
+                   and (bucket(len(S)) <= GRAPH_STATE if prefixes[i] is None else len(S) <= BANK_WIDTH)]
+        probs, out_prefixes = [None] * len(encs), list(prefixes)
+        for i in sorted(set(range(len(encs))) - set(batched)):
+            if prefixes[i] is not None: probs[i] = self.probs_with_prefix(encs[i], prefixes[i])
+            else: probs[i], out_prefixes[i] = self.probs_and_prefix(encs[i])
+        if batched:   # states of a similar length share a state pass; at most one bank entry per request
+            for group in length_groups([len(splits[i][0]) for i in batched], GRAPH_STATES):
+                group = [batched[j] for j in group]
+                ps, pre = self._graphed_batch([splits[i] for i in group], [prefixes[i] for i in group])
+                for i, p, q in zip(group, ps, pre): probs[i], out_prefixes[i] = p, q
+        return probs, out_prefixes
+
+    def _graphed_batch(self, splits, prefixes):
+        """One state pass over the distinct new states (identical states in the batch are computed once) and one row pass
+        over every question, through kev.cuda_graphs; hits are copied into the state bank after the state pass."""
+        from .cuda_graphs import bucket
+        g = self.graphs
+        new = {}                                                     # distinct new states -> (ids, positions), in order
+        for (S, Sp, _), p in zip(splits, prefixes):
+            if p is None: new.setdefault(tuple(S), (S, Sp))
+        caches = dict(zip(new, g.states(list(new.values()), bucket(max(map(len, new)))))) if new else {}
+        entries = {S: j for j, S in enumerate(new)}                  # state -> bank entry; cached states go after the new ones
+        out_prefixes, rows, sources, free = [], [], [], len(new)
+        for (S, _, rs), p in zip(splits, prefixes):
+            if p is None:
+                e = entries[tuple(S)]; out_prefixes.append((len(S), caches[tuple(S)], None))
+            else:
+                e, free = free, free + 1
+                g.load_state(e, p[1], len(S)); out_prefixes.append(p)
+            rows += [(r["ids"], r["pos"]) for r in rs]; sources += [(e, len(S))] * len(rs)
+        hs = iter(g.rows(rows, sources))
+        ps = [[F.softmax(self.head(h[r["decide"]], h[torch.tensor(r["opts"], device=self.device)]), -1) for r, h in zip(rs, hs)] for _, _, rs in splits]
+        flat = torch.cat([p for req in ps for p in req]).cpu().split([len(p) for req in ps for p in req])   # one device sync for the batch
+        it = iter(flat)
+        return [[next(it) for _ in req] for req in ps], out_prefixes
+
     def trainable_parameters(self):
         return [p for p in self.parameters() if p.requires_grad]

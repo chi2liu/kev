@@ -4156,5 +4156,197 @@
       "6 questions, short state",
       "cached_ms"
     ]
+  },
+  {
+    "printed": "31.7",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-h100/report.json",
+    "path": [
+      "throughput",
+      "6 questions, new short state @ 1 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "61.8",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-h100/report.json",
+    "path": [
+      "throughput",
+      "6 questions, new short state @ 8 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "70.3",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-h100/report.json",
+    "path": [
+      "throughput",
+      "6 questions, new short state @ 32 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "69.9",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-h100/report.json",
+    "path": [
+      "throughput",
+      "6 questions, new short state @ 64 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "43.0",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-h100/report.json",
+    "path": [
+      "throughput",
+      "decision-v7 development @ 1 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "69.3",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-h100/report.json",
+    "path": [
+      "throughput",
+      "decision-v7 development @ 8 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "83.0",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-h100/report.json",
+    "path": [
+      "throughput",
+      "decision-v7 development @ 32 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "92.0",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-h100/report.json",
+    "path": [
+      "throughput",
+      "decision-v7 development @ 64 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "18.6",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-l40s/report.json",
+    "path": [
+      "throughput",
+      "6 questions, new short state @ 1 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "31.4",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-l40s/report.json",
+    "path": [
+      "throughput",
+      "6 questions, new short state @ 8 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "29.6",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-l40s/report.json",
+    "path": [
+      "throughput",
+      "6 questions, new short state @ 32 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "33.1",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-l40s/report.json",
+    "path": [
+      "throughput",
+      "6 questions, new short state @ 64 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "24.8",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-l40s/report.json",
+    "path": [
+      "throughput",
+      "decision-v7 development @ 1 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "37.0",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-l40s/report.json",
+    "path": [
+      "throughput",
+      "decision-v7 development @ 8 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "40.8",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-l40s/report.json",
+    "path": [
+      "throughput",
+      "decision-v7 development @ 32 clients",
+      "requests_per_s"
+    ]
+  },
+  {
+    "printed": "45.0",
+    "in": [
+      "README.md"
+    ],
+    "source": "runs/batch-4b-l40s/report.json",
+    "path": [
+      "throughput",
+      "decision-v7 development @ 64 clients",
+      "requests_per_s"
+    ]
   }
 ]

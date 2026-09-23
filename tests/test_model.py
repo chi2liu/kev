@@ -181,6 +181,16 @@ def test_cuda_graphs_match_eager():
             graphs.capture_pending(); prefix = m.prefix(enc)                     # now replayed
             for got in (first, m.probs_with_prefix(enc, prefix), m.probs_with_prefix(enc, prefix), m.probs_with_prefix(enc, eager_prefix)):
                 assert all((a - b).abs().max() < 0.05 for a, b in zip(ref, got))
+        # cross-request batching: misses (two with the same state), hits, a state past GRAPH_STATE and a row past GRAPH_ROW
+        # in one probs_batch call give each request its own answers
+        encs = [m.encode(tok, rec, max_state=SERVE_MAX_STATE, max_branch=SERVE_MAX_BRANCH) for rec in recs + recs[:2]]
+        m.graphs = None; refs = [m.probs(e) for e in encs]
+        m.graphs = graphs; prefixes = [None] * len(encs); prefixes[1] = m.prefix(encs[1])
+        for _ in range(2):   # first run: new buckets run eagerly; second: replayed
+            got, new = m.probs_batch(encs, prefixes)
+            graphs.capture_pending()
+        for ref, ps, p in zip(refs, got, new):
+            assert p is not None and all((a - b).abs().max() < 0.05 for a, b in zip(ref, ps))
     assert graphs.captures > 0 and not graphs.pending
 
 def test_init_from_warm_start_and_compatibility_checks(tmp_path):

@@ -93,7 +93,9 @@ Title Case sections, API tables, Authors + License); model cards are formal.
   - SDK: `TypeSafeClient(api_key="local", base_url="http://127.0.0.1:8009", model="kev-latest")`
   - CUDA: bf16 + CUDA graphs by default (`kev/cuda_graphs.py`, `LoadOptions.cuda_graphs`, `KEV_CUDA_GRAPHS=0` to decline). A server pass
     was kernel-launch bound (~60 ms on an H100 at any length); graphs replay bucketed passes (state left-padded, rows right-padded, masked
-    exactly; equal to eager up to bf16 reassociation), a new bucket runs eagerly and is captured on a background thread under the model lock.
+    exactly; equal to eager up to bf16 reassociation), a new bucket runs eagerly and is captured when the server is idle (or once it keeps recurring).
+    `kev.serve.Server` runs every pass on one model thread that batches whatever is queued (`DecisionModel.probs_batch`: one state pass for the
+    batch's new states into a fixed-layout state bank, row passes gathering each row's state from it, grouped by length); `Server.lock` excludes it.
     Measure with `uv run modal run modal_app.py::serving --run <hub id> --gpu <GPU> --name <name>` (`scripts/serving_bench.py`: latency with
     and without graphs, parity vs fp32; reports in `runs/serving-*`). `tests/test_model.py::test_cuda_graphs_match_eager` needs CUDA (run it on Modal).
     Loading merges the fp32 adapter straight into bf16 weights (same bits as the old fp32 merge + cast), so Kev-9B needs ~17 GB, not 36 GB.

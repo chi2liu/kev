@@ -65,6 +65,33 @@ def latency(server, reps):
     return out
 
 
+def throughput(server, suite, levels=(1, 8, 32, 64)):
+    """Concurrent clients calling Server.probs (in-process, no HTTP): p50 / p99 per request and requests/s, on 256
+    decision-v7 development records (short states, 1-6 questions: API-like traffic) and on 64 requests of 5 questions over
+    a 2,200-token state. Every level runs twice: the first run meets that level's batch shapes (they run eagerly and get
+    their CUDA graphs captured, reported as `first`), then the server settles and the second run is the steady state."""
+    import random
+    from concurrent.futures import ThreadPoolExecutor
+    from kev.api import to_record
+    samples = {"6 questions, new short state": [to_record(request("6 questions, short state", 1000 + i))[0] for i in range(256)],
+               "decision-v7 development": random.Random(0).choices([materialize(r) for r in load_split(suite, "development")], k=256),
+               "5 questions, 2,200-token state": [to_record(request("5 questions, 2,200-token state", 1000 + i))[0] for i in range(64)]}
+    def run(recs, c):
+        def one(rec):
+            t = time.perf_counter(); server.probs(rec); return time.perf_counter() - t
+        with ThreadPoolExecutor(c) as pool:
+            start = time.perf_counter(); lat = sorted(pool.map(one, recs)); wall = time.perf_counter() - start
+        return {"p50_ms": round(1000 * statistics.median(lat), 1), "p99_ms": round(1000 * lat[int(0.99 * (len(lat) - 1))], 1), "requests_per_s": round(len(lat) / wall, 1)}
+
+    out = {}
+    for name, recs in samples.items():
+        for c in levels:
+            first = run(recs, c); server.wait_idle()
+            out[f"{name} @ {c} clients"] = {**run(recs, c), "first": first}
+            print(name, c, out[f"{name} @ {c} clients"], flush=True)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", default="jaredpalmer/kev-4b"); ap.add_argument("--n", type=int, default=200)
@@ -100,6 +127,7 @@ def main():
     for name, (got, ref) in pairs.items():
         dp = [float((p - q).abs().max()) for ps, qs in zip(got, ref) for p, q in zip(ps, qs)]
         report[name] = {"max_dp": max(dp), "mean_dp": statistics.mean(dp), "argmax_flips": sum(int(p.argmax() != q.argmax()) for ps, qs in zip(got, ref) for p, q in zip(ps, qs))}
+    report["throughput"] = throughput(server, a.suite)
     report["graphs_captured"] = graphs.captures
     m.graphs = None; server.prefix_cache.clear()
     report["latency_eager"] = latency(server, a.reps)
