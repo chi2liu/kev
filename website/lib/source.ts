@@ -13,6 +13,20 @@ const docs = defineDocs({
     schema: pageSchema,
     mdxOptions: applyMdxPreset({
       remarkPlugins: [[remarkMath, { singleDollarTextMath: false }]],
+      remarkStructureOptions: {
+        stringify: {
+          filterElement: (node) =>
+            node.type === "mdxJsxFlowElement" || node.type === "mdxJsxTextElement"
+              ? node.name === "Card"
+                ? false
+                : node.name === "Callout" || node.name === "File" || node.name === "TypeTable"
+                  ? true
+                  : "children-only"
+              : true,
+          stringify: (node) =>
+            node.type === "math" || node.type === "inlineMath" ? node.value : undefined,
+        },
+      },
       rehypePlugins: (plugins) => [rehypeKatex, ...plugins],
     }),
     postprocess: {
