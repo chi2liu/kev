@@ -125,13 +125,13 @@ def fetch_partition(directory, filename):
     if evals_root is None:
         raise FileNotFoundError(f"{directory / filename} is missing and is not under an evals/ tree")
     relative = directory.relative_to(evals_root) / filename
-    mirror = read_manifest(directory).get("mirror", {})
-    repo, revision = mirror.get("dataset", SUITES_DATASET), mirror.get("revision", SUITES_REVISION)
+    mirror = read_manifest(directory).get("mirror")
+    repo, revision = (mirror["dataset"], mirror["revision"]) if mirror else (SUITES_DATASET, SUITES_REVISION)   # a named mirror pins its own revision
     try:
         cached = hf_hub_download(repo, str(relative), repo_type="dataset", revision=revision)
     except (RepositoryNotFoundError, GatedRepoError) as e:   # a private mirror answers "not found" to anyone without access
-        raise PermissionError(f"{relative} is only in {repo}, which this account cannot read; `hf auth login` (or HF_TOKEN) "
-                              "with access to it, or ask for it") from e
+        raise PermissionError(f"{relative} is only in {repo}, which is missing or private to this account; `hf auth login` "
+                              "(or HF_TOKEN) with access to it, or ask for it") from e
     shutil.copyfile(cached, directory / filename)
     print(f"fetched {relative} from {repo}@{revision[:10]}", flush=True)
 

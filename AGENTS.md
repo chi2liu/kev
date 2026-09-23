@@ -54,7 +54,7 @@ Title Case sections, API tables, Authors + License); model cards are formal.
   `SUITES_REVISION`, gitignore the large partitions. Never modify a frozen file; new data = new version.
   Held-out suites whose text must never be public (a private test set) keep only `manifest.json` in git and name their
   own mirror in it, `"mirror": {"dataset": "jaredpalmer/kev-private-evals", "revision": "<commit sha>"}` (`kev.suite.PRIVATE_DATASET`,
-  a private dataset repo): freeze locally, `hf upload jaredpalmer/kev-private-evals evals . --type dataset --include "<suite>/*.jsonl"`,
+  a private dataset repo): freeze locally, `hf upload jaredpalmer/kev-private-evals evals . --type dataset --include "<suite path under evals/>/*.jsonl"` (e.g. `held/documents-v2/*.jsonl`),
   write the returned commit into the manifest, gitignore the partitions. `load_split` fetches and hash-checks them for accounts with
   access (`hf auth login` / `HF_TOKEN`; Modal images already carry a locally fetched copy under `evals/`) and raises a
   PermissionError naming the repo for everyone else; `tests/test_conventions.py` fails if such a suite tracks a partition.
