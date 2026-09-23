@@ -25,12 +25,12 @@
     "checkpointing": 1,
     "replay": 2000,
     "max_state": 7552,
-    "base": "Qwen/Qwen3.5-4B-Base",
-    "base_revision": "1001bb4d826a52d1f399e183466143f4da7b741b",
-    "init_from": "jaredpalmer/kev-4b",
+    "base": "Qwen/Qwen3.5-9B-Base",
+    "base_revision": "68c46c4b3498877f3ef123c856ecfde50c39f404",
+    "init_from": "jaredpalmer/kev-9b",
     "data": "evals/round6/soft-nomnli-thr08/train.jsonl"
   },
-  "config_sha256": "2c716465472a9338a5453647093d0b292e2d64047d3322fc9882df17c50054fb",
+  "config_sha256": "20293ed9ed3598cacb6395e343b863ecaeb0908135eb93349ded92d058c9c8db",
   "suite_sha256": "a8f50e481b7d90b97da049e0ff6a01cee2f1ed204aed61a8265af0edbb5514d2",
   "source_hashes": {
     "kev/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -70,10 +70,10 @@
   "gpu": "NVIDIA H200",
   "legacy_checkpoint": false,
   "measured_checkpoint": {
-    "requested": "/runs/r6-4b-r2/02-trial-2/checkpoint",
-    "resolved": "/runs/r6-4b-r2/02-trial-2/checkpoint",
-    "head_sha256": "d26fd9635175b2aa70f03ae83a7a1821ddf39a23e9de78f3be390620a60e0710",
-    "adapter_sha256": "2809e134fe887aa20e3695c16ae39a60da8621ddabb1e3c6a762a6496562e795",
+    "requested": "/runs/r6-9b-r2/00-trial-0/checkpoint",
+    "resolved": "/runs/r6-9b-r2/00-trial-0/checkpoint",
+    "head_sha256": "60bf25df71e22b8ec3276a564349980f8ec48b8f67edc71fa7fdc571a9fb134f",
+    "adapter_sha256": "4e7cf3cc75325a9f1a09e2e8685f3f3ce30c7d9ff292c32b8816a38a341bed55",
     "inference_temperature": 1.0
   }
 }

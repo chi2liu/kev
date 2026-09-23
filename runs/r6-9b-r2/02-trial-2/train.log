@@ -1,0 +1,82 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+delta: warm start from /__modal/volumes/vo-kEMu8BkBAIrorAQI6V8f2D/hub/models--jaredpalmer--kev-9b/snapshots/2629c06a5aeb0feb3b9783bafed17ed8f39ecf5c: 496 adapter tensors and the pointer head loaded
+device=cuda trainable params=45.4M
+replay: 2000 of 12576 suite training records mixed with 4009 from evals/round6/soft-nomnli-thr08/train.jsonl
+6009 training requests (holdout=[]), questions by type {'choice': 3074, 'score': 1971, 'noul': 2803}
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+ep0 step 10/752 loss 1.963 kl 0.000 anchor 0.000 5.291s/rec
+ep0 step 20/752 loss 1.632 kl 0.000 anchor 0.000 3.295s/rec
+ep0 step 30/752 loss 0.947 kl 0.000 anchor 0.000 2.575s/rec
+ep0 step 40/752 loss 0.834 kl 0.000 anchor 0.000 2.147s/rec
+ep0 step 50/752 loss 0.815 kl 0.000 anchor 0.000 1.936s/rec
+ep0 step 60/752 loss 0.976 kl 0.000 anchor 0.000 1.819s/rec
+ep0 step 70/752 loss 0.904 kl 0.000 anchor 0.000 1.747s/rec
+ep0 step 80/752 loss 0.838 kl 0.000 anchor 0.000 1.648s/rec
+ep0 step 90/752 loss 0.718 kl 0.000 anchor 0.000 1.559s/rec
+ep0 step 100/752 loss 0.768 kl 0.000 anchor 0.000 1.493s/rec
+ep0 step 110/752 loss 0.630 kl 0.000 anchor 0.000 1.431s/rec
+ep0 step 120/752 loss 0.568 kl 0.000 anchor 0.000 1.385s/rec
+ep0 step 130/752 loss 0.804 kl 0.000 anchor 0.000 1.378s/rec
+ep0 step 140/752 loss 0.762 kl 0.000 anchor 0.000 1.346s/rec
+ep0 step 150/752 loss 0.741 kl 0.000 anchor 0.000 1.317s/rec
+ep0 step 160/752 loss 0.629 kl 0.000 anchor 0.000 1.298s/rec
+ep0 step 170/752 loss 0.527 kl 0.000 anchor 0.000 1.274s/rec
+ep0 step 180/752 loss 0.695 kl 0.000 anchor 0.000 1.248s/rec
+ep0 step 190/752 loss 0.552 kl 0.000 anchor 0.000 1.224s/rec
+ep0 step 200/752 loss 0.719 kl 0.000 anchor 0.000 1.207s/rec
+ep0 step 210/752 loss 0.708 kl 0.000 anchor 0.000 1.197s/rec
+ep0 step 220/752 loss 0.666 kl 0.000 anchor 0.000 1.181s/rec
+ep0 step 230/752 loss 0.580 kl 0.000 anchor 0.000 1.176s/rec
+ep0 step 240/752 loss 0.823 kl 0.000 anchor 0.000 1.169s/rec
+ep0 step 250/752 loss 0.455 kl 0.000 anchor 0.000 1.162s/rec
+ep0 step 260/752 loss 0.595 kl 0.000 anchor 0.000 1.158s/rec
+ep0 step 270/752 loss 0.630 kl 0.000 anchor 0.000 1.151s/rec
+ep0 step 280/752 loss 0.719 kl 0.000 anchor 0.000 1.139s/rec
+ep0 step 290/752 loss 0.549 kl 0.000 anchor 0.000 1.127s/rec
+ep0 step 300/752 loss 0.493 kl 0.000 anchor 0.000 1.116s/rec
+ep0 step 310/752 loss 0.601 kl 0.000 anchor 0.000 1.112s/rec
+ep0 step 320/752 loss 0.598 kl 0.000 anchor 0.000 1.121s/rec
+ep0 step 330/752 loss 0.601 kl 0.000 anchor 0.000 1.114s/rec
+ep0 step 340/752 loss 0.516 kl 0.000 anchor 0.000 1.112s/rec
+ep0 step 350/752 loss 0.520 kl 0.000 anchor 0.000 1.106s/rec
+ep0 step 360/752 loss 0.537 kl 0.000 anchor 0.000 1.110s/rec
+ep0 step 370/752 loss 0.707 kl 0.000 anchor 0.000 1.102s/rec
+ep0 step 380/752 loss 0.495 kl 0.000 anchor 0.000 1.095s/rec
+ep0 step 390/752 loss 0.723 kl 0.000 anchor 0.000 1.086s/rec
+ep0 step 400/752 loss 0.520 kl 0.000 anchor 0.000 1.081s/rec
+ep0 step 410/752 loss 0.720 kl 0.000 anchor 0.000 1.079s/rec
+ep0 step 420/752 loss 0.725 kl 0.000 anchor 0.000 1.080s/rec
+ep0 step 430/752 loss 0.467 kl 0.000 anchor 0.000 1.080s/rec
+ep0 step 440/752 loss 0.449 kl 0.000 anchor 0.000 1.072s/rec
+ep0 step 450/752 loss 0.439 kl 0.000 anchor 0.000 1.070s/rec
+ep0 step 460/752 loss 0.413 kl 0.000 anchor 0.000 1.066s/rec
+ep0 step 470/752 loss 0.512 kl 0.000 anchor 0.000 1.062s/rec
+ep0 step 480/752 loss 0.577 kl 0.000 anchor 0.000 1.061s/rec
+ep0 step 490/752 loss 0.459 kl 0.000 anchor 0.000 1.060s/rec
+ep0 step 500/752 loss 0.516 kl 0.000 anchor 0.000 1.058s/rec
+ep0 step 510/752 loss 0.678 kl 0.000 anchor 0.000 1.059s/rec
+ep0 step 520/752 loss 0.758 kl 0.000 anchor 0.000 1.055s/rec
+ep0 step 530/752 loss 0.461 kl 0.000 anchor 0.000 1.051s/rec
+ep0 step 540/752 loss 0.698 kl 0.000 anchor 0.000 1.053s/rec
+ep0 step 550/752 loss 0.646 kl 0.000 anchor 0.000 1.052s/rec
+ep0 step 560/752 loss 0.564 kl 0.000 anchor 0.000 1.055s/rec
+ep0 step 570/752 loss 0.545 kl 0.000 anchor 0.000 1.054s/rec
+ep0 step 580/752 loss 0.559 kl 0.000 anchor 0.000 1.060s/rec
+ep0 step 590/752 loss 0.610 kl 0.000 anchor 0.000 1.059s/rec
+ep0 step 600/752 loss 0.609 kl 0.000 anchor 0.000 1.059s/rec
+ep0 step 610/752 loss 0.697 kl 0.000 anchor 0.000 1.056s/rec
+ep0 step 620/752 loss 0.542 kl 0.000 anchor 0.000 1.054s/rec
+ep0 step 630/752 loss 0.385 kl 0.000 anchor 0.000 1.053s/rec
+ep0 step 640/752 loss 0.525 kl 0.000 anchor 0.000 1.050s/rec
+ep0 step 650/752 loss 0.587 kl 0.000 anchor 0.000 1.050s/rec
+ep0 step 660/752 loss 0.535 kl 0.000 anchor 0.000 1.049s/rec
+ep0 step 670/752 loss 0.537 kl 0.000 anchor 0.000 1.047s/rec
+ep0 step 680/752 loss 0.575 kl 0.000 anchor 0.000 1.050s/rec
+ep0 step 690/752 loss 0.529 kl 0.000 anchor 0.000 1.049s/rec
+ep0 step 700/752 loss 0.527 kl 0.000 anchor 0.000 1.047s/rec
+ep0 step 710/752 loss 0.533 kl 0.000 anchor 0.000 1.046s/rec
+ep0 step 720/752 loss 0.457 kl 0.000 anchor 0.000 1.044s/rec
+ep0 step 730/752 loss 0.477 kl 0.000 anchor 0.000 1.046s/rec
+ep0 step 740/752 loss 0.384 kl 0.000 anchor 0.000 1.045s/rec
+ep0 step 750/752 loss 0.482 kl 0.000 anchor 0.000 1.042s/rec
+saved /runs/r6-9b-r2/02-trial-2/checkpoint

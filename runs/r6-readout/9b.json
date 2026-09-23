@@ -635,21 +635,79 @@
         "confident_error_rate": 0.021341463414634148,
         "coverage_at_5pct_error": 0.6082317073170732
       },
-      "long": "unread",
-      "externals": {
-        "semif": "unread",
-        "scienthoon": "unread",
-        "wanli2": "unread",
-        "typesafe": "unread"
+      "long": {
+        "delta": 0.18274111675126903,
+        "ci95": [
+          0.13585467540202506,
+          0.2264208069465299
+        ]
       },
-      "pooled_external": "unread",
-      "unknowable_share": "unread",
+      "long_acc": 0.754653130287648,
+      "externals": {
+        "semif": {
+          "delta": 0.01388888888888895,
+          "ci95": [
+            -0.01388888888888884,
+            0.04166666666666674
+          ],
+          "n": 144,
+          "margin": -0.03,
+          "acc": 0.9236111111111112
+        },
+        "scienthoon": {
+          "delta": 0.004581901489117968,
+          "ci95": [
+            -0.00572737686139746,
+            0.014891179839633506
+          ],
+          "n": 873,
+          "margin": -0.02,
+          "acc": 0.7594501718213058
+        },
+        "wanli2": {
+          "delta": -0.020958083832335328,
+          "ci95": [
+            -0.03792415169660679,
+            -0.0029940119760478723
+          ],
+          "n": 1002,
+          "margin": -0.02,
+          "acc": 0.718562874251497
+        },
+        "typesafe": {
+          "delta": 0.0337078651685393,
+          "ci95": [
+            0.0,
+            0.0789736842105262
+          ],
+          "n": 89,
+          "margin": -0.03,
+          "acc": 0.8539325842696629
+        }
+      },
+      "pooled_external": {
+        "delta": -0.005692599620493288,
+        "ci95": [
+          -0.014741021729186732,
+          0.003807892192944869
+        ]
+      },
+      "unknowable_share": 0.0,
       "criteria": {
+        "1_long_lower_above_0": true,
+        "1_long_point_at_least_5pp": true,
         "2_short_acc_lower_at_least_minus_1pp": true,
         "2_short_brier_upper_at_most_0.01": true,
-        "2_short_confident_errors_upper_at_most_1pp": true
+        "2_short_confident_errors_upper_at_most_1pp": true,
+        "3_semif_lower_at_least_margin": true,
+        "3_scienthoon_lower_at_least_margin": true,
+        "3_wanli2_lower_at_least_margin": false,
+        "3_typesafe_lower_at_least_margin": true,
+        "3_pooled_point_at_least_0": false,
+        "3_pooled_lower_at_least_minus_1pp": false,
+        "3_unknowable_share_at_most_0.05": true
       },
-      "complete": false,
+      "complete": true,
       "passed": false
     },
     {
@@ -758,6 +816,156 @@
         "3_unknowable_share_at_most_0.05": true
       },
       "complete": true,
+      "passed": false
+    },
+    {
+      "arm": "soft-nomnli-thr08",
+      "trial": "runs/r6-9b-r2/00-trial-0",
+      "temperature": 1.2599210498948732,
+      "short": {
+        "acc": {
+          "delta": 0.0030487804878048808,
+          "ci95": [
+            -0.007621951219512146,
+            0.013719512195121908
+          ]
+        },
+        "brier": {
+          "delta": -0.011912474890933944,
+          "ci95": [
+            -0.021570924891610672,
+            -0.0018927730783654304
+          ]
+        },
+        "confident_error_rate": {
+          "delta": -0.01676829268292683,
+          "ci95": [
+            -0.03048780487804878,
+            -0.006097560975609755
+          ]
+        }
+      },
+      "short_metrics": {
+        "acc": 0.8246951219512195,
+        "brier": 0.2520796758413328,
+        "confident_error_rate": 0.022865853658536585,
+        "coverage_at_5pct_error": 0.5548780487804879
+      },
+      "long": "unread",
+      "externals": {
+        "semif": "unread",
+        "scienthoon": "unread",
+        "wanli2": "unread",
+        "typesafe": "unread"
+      },
+      "pooled_external": "unread",
+      "unknowable_share": "unread",
+      "criteria": {
+        "2_short_acc_lower_at_least_minus_1pp": true,
+        "2_short_brier_upper_at_most_0.01": true,
+        "2_short_confident_errors_upper_at_most_1pp": true
+      },
+      "complete": false,
+      "passed": false
+    },
+    {
+      "arm": "soft-nomnli-seed2",
+      "trial": "runs/r6-9b-r2/01-trial-1",
+      "temperature": 1.2030250360821164,
+      "short": {
+        "acc": {
+          "delta": -0.007621951219512257,
+          "ci95": [
+            -0.02286585365853666,
+            0.0060975609756097615
+          ]
+        },
+        "brier": {
+          "delta": -0.005755035928507235,
+          "ci95": [
+            -0.01897598749975809,
+            0.00787786854140988
+          ]
+        },
+        "confident_error_rate": {
+          "delta": -0.009146341463414635,
+          "ci95": [
+            -0.019817073170731708,
+            0.0
+          ]
+        }
+      },
+      "short_metrics": {
+        "acc": 0.8140243902439024,
+        "brier": 0.2582371148037595,
+        "confident_error_rate": 0.03048780487804878,
+        "coverage_at_5pct_error": 0.5045731707317073
+      },
+      "long": "unread",
+      "externals": {
+        "semif": "unread",
+        "scienthoon": "unread",
+        "wanli2": "unread",
+        "typesafe": "unread"
+      },
+      "pooled_external": "unread",
+      "unknowable_share": "unread",
+      "criteria": {
+        "2_short_acc_lower_at_least_minus_1pp": false,
+        "2_short_brier_upper_at_most_0.01": true,
+        "2_short_confident_errors_upper_at_most_1pp": true
+      },
+      "complete": false,
+      "passed": false
+    },
+    {
+      "arm": "soft-nomnli-thr08-seed2",
+      "trial": "runs/r6-9b-r2/02-trial-2",
+      "temperature": 1.2599210498948732,
+      "short": {
+        "acc": {
+          "delta": -0.0015243902439024959,
+          "ci95": [
+            -0.01676829268292679,
+            0.012195121951219415
+          ]
+        },
+        "brier": {
+          "delta": -0.009354673436384797,
+          "ci95": [
+            -0.01907501308979017,
+            0.0007434993012062785
+          ]
+        },
+        "confident_error_rate": {
+          "delta": -0.012195121951219513,
+          "ci95": [
+            -0.021341463414634148,
+            -0.0030487804878048773
+          ]
+        }
+      },
+      "short_metrics": {
+        "acc": 0.8201219512195121,
+        "brier": 0.254637477295882,
+        "confident_error_rate": 0.027439024390243903,
+        "coverage_at_5pct_error": 0.5564024390243902
+      },
+      "long": "unread",
+      "externals": {
+        "semif": "unread",
+        "scienthoon": "unread",
+        "wanli2": "unread",
+        "typesafe": "unread"
+      },
+      "pooled_external": "unread",
+      "unknowable_share": "unread",
+      "criteria": {
+        "2_short_acc_lower_at_least_minus_1pp": false,
+        "2_short_brier_upper_at_most_0.01": true,
+        "2_short_confident_errors_upper_at_most_1pp": true
+      },
+      "complete": false,
       "passed": false
     }
   ],

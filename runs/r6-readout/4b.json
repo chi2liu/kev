@@ -709,6 +709,272 @@
       },
       "complete": true,
       "passed": false
+    },
+    {
+      "arm": "soft-half-nomnli",
+      "trial": "runs/r6-4b-r2/00-trial-0",
+      "temperature": 1.096824979694626,
+      "short": {
+        "acc": {
+          "delta": 0.018292682926829285,
+          "ci95": [
+            0.0015243902439024959,
+            0.03658536585365846
+          ]
+        },
+        "brier": {
+          "delta": -0.018395673881969082,
+          "ci95": [
+            -0.029263072385067437,
+            -0.008961538890599304
+          ]
+        },
+        "confident_error_rate": {
+          "delta": -0.001524390243902437,
+          "ci95": [
+            -0.006097560975609758,
+            0.0030487804878048808
+          ]
+        }
+      },
+      "short_metrics": {
+        "acc": 0.8155487804878049,
+        "brier": 0.24544316046091916,
+        "confident_error_rate": 0.024390243902439025,
+        "coverage_at_5pct_error": 0.6097560975609756
+      },
+      "long": {
+        "delta": 0.1353637901861252,
+        "ci95": [
+          0.09214851654380349,
+          0.17944754730685536
+        ]
+      },
+      "long_acc": 0.6734348561759729,
+      "externals": {
+        "semif": {
+          "delta": 0.0,
+          "ci95": [
+            -0.03472222222222221,
+            0.03472222222222221
+          ],
+          "n": 144,
+          "margin": -0.03,
+          "acc": 0.8888888888888888
+        },
+        "scienthoon": {
+          "delta": -0.02405498281786933,
+          "ci95": [
+            -0.04123711340206193,
+            -0.0068728522336769515
+          ],
+          "n": 873,
+          "margin": -0.02,
+          "acc": 0.6723940435280642
+        },
+        "wanli2": {
+          "delta": 0.009980039920159611,
+          "ci95": [
+            -0.005988023952095856,
+            0.024950099800399195
+          ],
+          "n": 1002,
+          "margin": -0.02,
+          "acc": 0.7085828343313373
+        },
+        "typesafe": {
+          "delta": -0.05617977528089879,
+          "ci95": [
+            -0.10752688172043012,
+            -0.01709401709401714
+          ],
+          "n": 89,
+          "margin": -0.03,
+          "acc": 0.7865168539325843
+        }
+      },
+      "pooled_external": {
+        "delta": -0.007590132827324458,
+        "ci95": [
+          -0.01836309976541788,
+          0.002397790503492048
+        ]
+      },
+      "unknowable_share": 0.0,
+      "criteria": {
+        "1_long_lower_above_0": true,
+        "1_long_point_at_least_5pp": true,
+        "2_short_acc_lower_at_least_minus_1pp": true,
+        "2_short_brier_upper_at_most_0.01": true,
+        "2_short_confident_errors_upper_at_most_1pp": true,
+        "3_semif_lower_at_least_margin": false,
+        "3_scienthoon_lower_at_least_margin": false,
+        "3_wanli2_lower_at_least_margin": true,
+        "3_typesafe_lower_at_least_margin": false,
+        "3_pooled_point_at_least_0": false,
+        "3_pooled_lower_at_least_minus_1pp": false,
+        "3_unknowable_share_at_most_0.05": true
+      },
+      "complete": true,
+      "passed": false
+    },
+    {
+      "arm": "soft-half-seed2",
+      "trial": "runs/r6-4b-r2/01-trial-1",
+      "temperature": 1.0,
+      "short": {
+        "acc": {
+          "delta": 0.012195121951219523,
+          "ci95": [
+            -0.0015243902439024959,
+            0.02591463414634143
+          ]
+        },
+        "brier": {
+          "delta": -0.008732663626260517,
+          "ci95": [
+            -0.019058609209862937,
+            0.0019716444225990506
+          ]
+        },
+        "confident_error_rate": {
+          "delta": -0.012195121951219511,
+          "ci95": [
+            -0.021341463414634148,
+            -0.0030487804878048808
+          ]
+        }
+      },
+      "short_metrics": {
+        "acc": 0.8094512195121951,
+        "brier": 0.2551061707166277,
+        "confident_error_rate": 0.013719512195121951,
+        "coverage_at_5pct_error": 0.5899390243902439
+      },
+      "long": {
+        "delta": 0.12859560067681897,
+        "ci95": [
+          0.08659729145895638,
+          0.17003540560241595
+        ]
+      },
+      "long_acc": 0.6666666666666666,
+      "externals": {
+        "semif": {
+          "delta": 0.01388888888888895,
+          "ci95": [
+            -0.02083333333333337,
+            0.04878472222222132
+          ],
+          "n": 144,
+          "margin": -0.03,
+          "acc": 0.9027777777777778
+        },
+        "scienthoon": {
+          "delta": -0.01718213058419238,
+          "ci95": [
+            -0.03550973654066436,
+            0.0
+          ],
+          "n": 873,
+          "margin": -0.02,
+          "acc": 0.6792668957617412
+        },
+        "wanli2": {
+          "delta": 0.004990019960079861,
+          "ci95": [
+            -0.01097804391217561,
+            0.020958083832335328
+          ],
+          "n": 1002,
+          "margin": -0.02,
+          "acc": 0.7035928143712575
+        },
+        "typesafe": {
+          "delta": 0.0,
+          "ci95": [
+            -0.03798685491723464,
+            0.026791747104247084
+          ],
+          "n": 89,
+          "margin": -0.03,
+          "acc": 0.8426966292134831
+        }
+      },
+      "pooled_external": {
+        "delta": -0.003795066413662229,
+        "ci95": [
+          -0.015137898102023534,
+          0.006698885713368217
+        ]
+      },
+      "unknowable_share": 0.0,
+      "criteria": {
+        "1_long_lower_above_0": true,
+        "1_long_point_at_least_5pp": true,
+        "2_short_acc_lower_at_least_minus_1pp": true,
+        "2_short_brier_upper_at_most_0.01": true,
+        "2_short_confident_errors_upper_at_most_1pp": true,
+        "3_semif_lower_at_least_margin": true,
+        "3_scienthoon_lower_at_least_margin": false,
+        "3_wanli2_lower_at_least_margin": true,
+        "3_typesafe_lower_at_least_margin": false,
+        "3_pooled_point_at_least_0": false,
+        "3_pooled_lower_at_least_minus_1pp": false,
+        "3_unknowable_share_at_most_0.05": true
+      },
+      "complete": true,
+      "passed": false
+    },
+    {
+      "arm": "soft-nomnli-thr08",
+      "trial": "runs/r6-4b-r2/02-trial-2",
+      "temperature": 1.1755479062836087,
+      "short": {
+        "acc": {
+          "delta": 0.012195121951219523,
+          "ci95": [
+            -0.0030487804878048808,
+            0.030487804878048697
+          ]
+        },
+        "brier": {
+          "delta": -0.008774795582387696,
+          "ci95": [
+            -0.019155386441230802,
+            0.0007663649271723739
+          ]
+        },
+        "confident_error_rate": {
+          "delta": 0.0,
+          "ci95": [
+            -0.00613567073170732,
+            0.006097560975609758
+          ]
+        }
+      },
+      "short_metrics": {
+        "acc": 0.8094512195121951,
+        "brier": 0.25506403876050066,
+        "confident_error_rate": 0.025914634146341462,
+        "coverage_at_5pct_error": 0.6021341463414634
+      },
+      "long": "unread",
+      "externals": {
+        "semif": "unread",
+        "scienthoon": "unread",
+        "wanli2": "unread",
+        "typesafe": "unread"
+      },
+      "pooled_external": "unread",
+      "unknowable_share": "unread",
+      "criteria": {
+        "2_short_acc_lower_at_least_minus_1pp": true,
+        "2_short_brier_upper_at_most_0.01": true,
+        "2_short_confident_errors_upper_at_most_1pp": true
+      },
+      "complete": false,
+      "passed": false
     }
   ],
   "ranking": []
