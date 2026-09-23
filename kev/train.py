@@ -178,15 +178,15 @@ def batch_loss(model, a, batch, dev, anchors, anchor_sources, autocast):
     for v, logits in zip(batch, logits_b):
         ce = sum(question_loss(z.float(), q, dev, a.ord_w, a.label_smoothing, a.brier_w, a.focal_gamma)
                  for z, q in zip(logits, v.rec["questions"])) / len(logits)
-        terms["ce"] += ce.detach().double(); loss = loss + ce
+        terms["ce"] += ce.detach(); loss = loss + ce
         if anchors and v.request_id in anchors and (anchor_sources is None or v.source in anchor_sources):
             kls = [t for t in (anchor_loss(z.float(), q, anchors[v.request_id].get(q["qid"]), dev) for z, q in zip(logits, v.rec["questions"])) if t is not None]
             if kls:
-                kl_a = sum(kls) / len(kls); loss = loss + a.anchor_w * kl_a; terms["anchor"] += kl_a.detach().double(); terms["anchor_n"] += 1
+                kl_a = sum(kls) / len(kls); loss = loss + a.anchor_w * kl_a; terms["anchor"] += kl_a.detach(); terms["anchor_n"] += 1
     for v, logits2 in zip(permuted, logits2_b):
         logits = logits_b[batch.index(v)]
         kls = [permutation_kl(z1.float(), z2.float(), perm, dev) for z1, z2, perm in zip(logits, logits2, v.permuted[1]) if perm is not None]
-        kl = sum(kls) / len(kls); loss = loss + a.perm_kl * kl; terms["kl"] += kl.detach().double(); terms["kl_n"] += 1
+        kl = sum(kls) / len(kls); loss = loss + a.perm_kl * kl; terms["kl"] += kl.detach(); terms["kl_n"] += 1
     if not torch.isfinite(loss):
         raise ValueError("non-finite training loss")
     return loss, terms

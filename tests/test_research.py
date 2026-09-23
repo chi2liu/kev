@@ -442,7 +442,7 @@ def test_batch_loss_defers_logging_without_retaining_gradients():
     with patch.object(torch.Tensor, "item", side_effect=AssertionError("logging must not sync per variant")):
         loss, terms = batch_loss(model, args, [first, second], "cpu", anchors, None, contextlib.nullcontext())
 
-    assert all(not terms[k].requires_grad and terms[k].dtype == torch.float64 for k in ("ce", "kl", "anchor"))
+    assert all(not terms[k].requires_grad and terms[k].dtype == torch.float32 for k in ("ce", "kl", "anchor"))
     assert (terms["anchor_n"], terms["kl_n"]) == (1, 1)
     run = Counter()
     run.update(terms)
