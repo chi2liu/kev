@@ -140,6 +140,12 @@ class Checkpoint:
     def adapter_config(self):
         return json.loads(self.file("adapter_config.json").read_text(encoding="utf-8"))
 
+    def mergeable(self):
+        """Can the adapter be folded into the base exactly? Not over a bf16 backbone (--weights_dtype bf16, e.g. the 35B-A3B
+        MoE whose fused experts need bf16: folding the fp32 adapter into bf16 weights would round it), and not when the
+        adapter carries trained token embeddings (special_embeddings)."""
+        return self.meta.weights_dtype != "bf16" and not self.adapter_config().get("trainable_token_indices")
+
     def release_date(self):
         """ISO date for the TypeSafe model card: the Hub commit date for a Hub checkpoint (falls back to the cached file's
         date offline), the time head.pt was written for a local run."""
@@ -192,8 +198,7 @@ class Checkpoint:
         if not str(device).startswith("cuda"): raise ValueError(f"the vLLM backend runs on CUDA; got device {device}")
         if not opts.merge: raise ValueError("the vLLM backend always merges the adapter (KEV_MERGE=0 needs backend=torch)")
         if self.meta.option_isolation: raise ValueError("option_isolation needs the packed mask; not available on the vLLM backend")
-        if self.meta.weights_dtype == "bf16" or self.adapter_config().get("trainable_token_indices"):
-            raise ValueError("the vLLM backend serves merged adapters; bf16-backbone and token-trained checkpoints stay unmerged (backend=torch)")
+        if not self.mergeable(): raise ValueError("the vLLM backend serves merged adapters; bf16-backbone and token-trained checkpoints stay unmerged (backend=torch)")
         dtype = opts.dtype or torch.bfloat16
         out = export_dir(self, dtype, opts.lora_scale)
         if not (out / "model.safetensors").exists():
@@ -205,12 +210,8 @@ class Checkpoint:
     def _load_torch(self, tok, device, opts):
         from peft import PeftModel
         meta = self.meta
-        dtype, merge = opts.dtype or torch.float32, opts.merge
-        if meta.weights_dtype == "bf16":
-            # trained with a bf16 backbone (--weights_dtype bf16, e.g. the 35B-A3B MoE whose fused experts need bf16): load it
-            # the same way and keep the fp32 adapter unmerged rather than folding it into bf16 weights.
-            dtype, merge = torch.bfloat16, False
-        merge = merge and not self.adapter_config().get("trainable_token_indices")   # token-trained adapters stay unmerged
+        dtype = torch.bfloat16 if meta.weights_dtype == "bf16" else opts.dtype or torch.float32   # a bf16 backbone loads the way it trained
+        merge = opts.merge and self.mergeable()
         m = DecisionModel(meta.base, tok, device, lora=None, revision=meta.base_revision, head_dim=meta.head_dim,
                           option_isolation=meta.option_isolation, dtype=torch.float32 if merge else dtype, attn=opts.attn)
         m.lm = PeftModel.from_pretrained(m.lm, self.path, torch_device=str(device)).to(device)   # trainable token embeddings, if any, live in the adapter

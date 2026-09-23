@@ -16,6 +16,7 @@ import os
 import subprocess
 import sys
 import time
+from dataclasses import replace
 from pathlib import Path
 
 import modal
@@ -61,7 +62,6 @@ WARMUP = {"state": "Shoes arrived two weeks late and in the wrong size. Also I s
 def load_server(run):
     """kev.serve's Server for `run`, loaded the way kev.serve.main does on CUDA (bf16, KEV_BACKEND from the image)."""
     import torch
-    from dataclasses import replace
     from kev.api import SystemOneRequest
     from kev.checkpoint import Checkpoint, LoadOptions
     from kev.serve import Server
@@ -90,12 +90,12 @@ class Kev:
         return self.api
 
 
-def benchmark(run, suite, name):
-    """kev.benchmark on the suite's development partition with this image's backend, to /runs/serve/<name>."""
+def benchmark(run, suite, name, dtype):
+    """kev.benchmark on the suite's development partition with this image's backend at KEV_DTYPE=dtype, to /runs/serve/<name>."""
     out = Path("/runs/serve") / name
     try:
         subprocess.run([sys.executable, "-m", "kev.benchmark", "--run", run, "--suite", f"/root/{suite}", "--out", str(out), "--device", "cuda"],
-                       check=True, cwd="/root", env={**os.environ, "PYTHONPATH": "/root"})
+                       check=True, cwd="/root", env={**os.environ, "PYTHONPATH": "/root", "KEV_DTYPE": dtype})
     finally:
         runs_volume.commit(); hf_cache.commit()
     return (out / "report.json").read_text(encoding="utf-8")
@@ -103,14 +103,12 @@ def benchmark(run, suite, name):
 
 @app.function(image=torch_image, gpu=GPU, cpu=4, memory=(32768, 131072), volumes=VOLUMES, secrets=secrets, timeout=7200)
 def benchmark_torch(run, suite, name, dtype):
-    os.environ["KEV_DTYPE"] = dtype
-    return benchmark(run, suite, name)
+    return benchmark(run, suite, name, dtype)
 
 
 @app.function(image=vllm_image, gpu=GPU, cpu=4, memory=(32768, 131072), volumes=VOLUMES, secrets=secrets, timeout=7200)
 def benchmark_vllm(run, suite, name):
-    os.environ["KEV_DTYPE"] = "bf16"
-    return benchmark(run, suite, name)
+    return benchmark(run, suite, name, "bf16")
 
 
 def load_test(run, suite, levels, requests):

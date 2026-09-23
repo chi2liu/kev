@@ -188,7 +188,7 @@ class PointerHead(nn.Module):
 
 # What a loaded model exposes to kev.serve, kev.predictors and the Space: the scoring interface DecisionModel (torch),
 # kev.mlx_model.MLXDecisionModel and kev.vllm_model.VLLMDecisionModel implement. tests/test_mlx.py checks the MLX class
-# against this list, tests/test_unit.py the vLLM one.
+# against this list; the vLLM one needs vllm + CUDA and is exercised by modal_serve.py::parity.
 SCORING_INTERFACE = ("encode", "forward", "probs", "probs_and_prefix", "probs_with_prefix", "eval",
                      "head", "backend", "dtype", "device", "hybrid", "option_isolation", "prefix_min_tokens", "concurrent")
 

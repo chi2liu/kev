@@ -125,6 +125,3 @@ class VLLMDecisionModel:
 
     def probs_with_prefix(self, enc, prefix):
         return self.probs(enc)
-
-    def shutdown(self):
-        self.engine.shutdown()
