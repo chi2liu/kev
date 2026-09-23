@@ -98,8 +98,9 @@ class LoadOptions:
                  installed and fp32 was not asked for (an explicit dtype=float32 means "the exact path"), else torch;
                  kev.serve uses auto. The MLX path always merges the adapter and ignores `attn` and `dtype` (the backbone
                  runs as stored, bf16).
-    cuda_graphs  replay the serving passes (state prefix, question rows on a cached state) of a hybrid backbone on CUDA as
-                 CUDA graphs (kev.cuda_graphs). None = off, the eager path every reported number uses; kev.serve turns it on
+    cuda_graphs  the fast serving path for a hybrid backbone on CUDA: its layers rewritten with fused kernels
+                 (kev.fused_qwen35) and its serving passes (state prefix, question rows on a cached state) replayed as CUDA
+                 graphs, batched across requests (kev.cuda_graphs). None = off, the eager path every reported number uses; kev.serve turns it on
                  for CUDA. Exact up to floating-point reassociation, not bit for bit (the passes are padded to buckets).
     """
     dtype: torch.dtype | None = None
@@ -213,6 +214,8 @@ class Checkpoint:
         if dtype != torch.float32: m.lm = m.lm.to(dtype)
         if opts.cuda_graphs and str(device).startswith("cuda") and m.hybrid:
             from .cuda_graphs import CudaGraphs
+            from .fused_qwen35 import fuse
+            if merge: fuse(m.lm)   # fused projections need the adapter folded in
             m.graphs = CudaGraphs(m.lm, m.pad_id)
         return m
 

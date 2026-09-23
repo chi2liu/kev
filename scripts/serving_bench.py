@@ -68,8 +68,9 @@ def latency(server, reps):
 def throughput(server, suite, levels=(1, 8, 32, 64)):
     """Concurrent clients calling Server.probs (in-process, no HTTP): p50 / p99 per request and requests/s, on 256
     decision-v7 development records (short states, 1-6 questions: API-like traffic) and on 64 requests of 5 questions over
-    a 2,200-token state. Every level runs twice: the first run meets that level's batch shapes (they run eagerly and get
-    their CUDA graphs captured, reported as `first`), then the server settles and the second run is the steady state."""
+    a 2,200-token state. Every level runs twice: a first pass over all levels meets their batch shapes (they run eagerly
+    and get their CUDA graphs captured, reported as `first`), then the server settles and the second pass is the steady
+    state."""
     import random
     from concurrent.futures import ThreadPoolExecutor
     from kev.api import to_record
@@ -85,9 +86,10 @@ def throughput(server, suite, levels=(1, 8, 32, 64)):
 
     out = {}
     for name, recs in samples.items():
+        first = {c: run(recs, c) for c in levels}   # meets every level's batch shapes first, so the timed runs replay graphs
+        server.wait_idle()
         for c in levels:
-            first = run(recs, c); server.wait_idle()
-            out[f"{name} @ {c} clients"] = {**run(recs, c), "first": first}
+            out[f"{name} @ {c} clients"] = {**run(recs, c), "first": first[c]}
             print(name, c, out[f"{name} @ {c} clients"], flush=True)
     return out
 
@@ -116,11 +118,12 @@ def main():
     server = Server(ck, tok, m, "cuda", release_date="-")
     report["latency_graphs"] = latency(server, a.reps)   # first, so first_ms includes the captures
     served = {"eager": [], "graphs_miss": [], "graphs_hit": []}
-    for r in recs:
-        enc = m.encode(tok, r)
-        m.graphs = None; served["eager"].append(m.probs_with_prefix(enc, m.prefix(enc)))
-        m.graphs = graphs; m.probs_and_prefix(enc); graphs.capture_pending()   # so both reads below replay graphs
-        p, prefix = m.probs_and_prefix(enc); served["graphs_miss"].append(p); served["graphs_hit"].append(m.probs_with_prefix(enc, prefix))
+    with server.lock:   # the model directly: keep the server's model thread (and its idle captures) out
+        for r in recs:
+            enc = m.encode(tok, r)
+            m.graphs = None; served["eager"].append(m.probs_with_prefix(enc, m.prefix(enc)))
+            m.graphs = graphs; m.probs_and_prefix(enc); graphs.capture_pending()   # so both reads below replay graphs
+            p, prefix = m.probs_and_prefix(enc); served["graphs_miss"].append(p); served["graphs_hit"].append(m.probs_with_prefix(enc, prefix))
     report["questions"] = sum(len(p) for p in served["eager"])
     pairs = {f"{k}_vs_eager_bf16": (v, served["eager"]) for k, v in served.items() if k != "eager"}
     if targets: pairs.update({f"{k}_vs_fp32": (v, targets) for k, v in served.items()})
@@ -128,8 +131,8 @@ def main():
         dp = [float((p - q).abs().max()) for ps, qs in zip(got, ref) for p, q in zip(ps, qs)]
         report[name] = {"max_dp": max(dp), "mean_dp": statistics.mean(dp), "argmax_flips": sum(int(p.argmax() != q.argmax()) for ps, qs in zip(got, ref) for p, q in zip(ps, qs))}
     report["throughput"] = throughput(server, a.suite)
-    report["graphs_captured"] = graphs.captures
-    m.graphs = None; server.prefix_cache.clear()
+    report["graphs"] = graphs.stats()
+    with server.lock: m.graphs = None; server.prefix_cache.clear()
     report["latency_eager"] = latency(server, a.reps)
     print(json.dumps(report, indent=1))
     Path(a.out).mkdir(parents=True, exist_ok=True)

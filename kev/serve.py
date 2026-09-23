@@ -9,7 +9,7 @@ comparison). KEV_PREFIX_CACHE / KEV_PREFIX_MIN_TOKENS size the state-prefix cach
 date preprocessing (api.with_date_facts). Backend and precision follow LoadOptions (KEV_BACKEND, KEV_DTYPE, ...): on Apple
 Silicon the hybrid Qwen3.5 checkpoints run on MLX by default, elsewhere on torch in bf16.
 """
-import argparse, atexit, hmac, os, queue, random, threading, time, uuid
+import argparse, asyncio, atexit, hmac, os, queue, random, threading, time, uuid
 from concurrent.futures import Future
 import torch
 from dataclasses import dataclass, field, replace
@@ -26,7 +26,6 @@ PREFIX_CACHE_SIZE = int(os.environ.get("KEV_PREFIX_CACHE", "4"))          # stat
 PREFIX_MIN_TOKENS = os.environ.get("KEV_PREFIX_MIN_TOKENS")               # states shorter than this are not cached; default = the model's prefix_min_tokens (0 for hybrid backbones and MLX, 384 for attention-only torch models)
 DATE_FACTS = os.environ.get("KEV_DATE_FACTS", "0") == "1"
 API_KEY = os.environ.get("KEV_API_KEY")                                  # unset = open server; set = require Authorization: Bearer <key>, as the TypeSafe clients always send
-HOT_BUCKET = 3                                                           # eager passes after which a busy server captures a bucket's CUDA graph anyway
 MAX_BATCH = 64                                                           # requests the model thread takes at once (kev.cuda_graphs splits them to fit its buffers)
 MODEL_NAMES = ("kev-latest", "jev-latest")                               # both names serve this checkpoint; jev-latest is the TypeSafe SDK default model, so an unconfigured client works
 
@@ -36,9 +35,9 @@ class Server:
     """The loaded checkpoint, the state-prefix cache, and the one model thread that runs every forward pass.
 
     Request threads encode their record and queue it; the model thread takes everything queued when it becomes free and
-    runs it as one batch (model.probs_batch: with CUDA graphs, one state pass for the batch's new states and one row pass
-    for all its questions; otherwise one request at a time), then answers each request. When nothing is waiting it
-    captures one pending CUDA graph. `lock` is held around each batch and capture: hold it to use the model directly."""
+    runs it as one batch (model.probs_batch: with CUDA graphs, shared state and row passes; otherwise one request at a
+    time), then answers each request. It also captures pending CUDA graphs when the graphs say so (capture_due). `lock` is
+    held around each batch and capture: hold it to use the model directly."""
     checkpoint: Checkpoint
     tok: object
     model: object
@@ -53,87 +52,93 @@ class Server:
 
     def __post_init__(self):
         self.release_date = self.release_date or self.checkpoint.release_date()
-        self.queue, self.busy, self.stopping = queue.Queue(), False, threading.Event()
+        self.queue, self.stopping = queue.Queue(), threading.Event()
         self.thread = threading.Thread(target=self._work, name="kev-model", daemon=True)
         self.thread.start()
         atexit.register(self.close)   # a daemon thread killed inside a CUDA call at interpreter exit aborts the process
 
     def close(self):
-        """Stop the model thread after its current pass."""
-        self.stopping.set(); self.thread.join(timeout=10)
+        """Stop the model thread after its current batch; requests still queued fail."""
+        self.stopping.set(); self.thread.join()
+        while not self.queue.empty():
+            self.queue.get_nowait()[1].set_exception(RuntimeError("the server stopped")); self.queue.task_done()
 
     @property
     def prefix_min_tokens(self):
         return int(PREFIX_MIN_TOKENS) if PREFIX_MIN_TOKENS else self.model.prefix_min_tokens
 
-    def probs(self, rec):
-        """Probabilities for one record, from the model thread. The state prefix (tokens up to the first question) is
-        cached across requests, so a repeated state only pays for its question rows. latency_ms is the model time of the
-        batch the request ran in (not its wait in the queue)."""
+    def submit(self, rec):
+        """Queue one record for the model thread. -> a Future of (probabilities, stats). The state prefix (tokens up to the
+        first question) is cached across requests, so a repeated state only pays for its question rows. latency_ms is the
+        model time of the batch the request ran in (not its wait in the queue)."""
         try: enc = self.model.encode(self.tok, rec, max_state=SERVE_MAX_STATE, max_branch=SERVE_MAX_BRANCH)
         except ValueError as e: raise HTTPException(422, str(e))
         done = Future()
         self.queue.put((enc, done))
-        return done.result()
+        return done
+
+    def probs(self, rec):
+        return self.submit(rec).result()
 
     def _work(self):
         graphs = getattr(self.model, "graphs", None)
         while not self.stopping.is_set():
             try: batch = [self.queue.get(timeout=0.05)]
-            except queue.Empty:   # idle: capture one pending CUDA graph (a request arriving now waits for at most this one, ~0.4 s)
-                if graphs is not None and graphs.pending: self._capture(graphs)
+            except queue.Empty:
+                if graphs is not None and graphs.capture_due(idle=True):
+                    with self.lock: graphs.capture_pending(limit=1)
                 continue
             while len(batch) < MAX_BATCH:
                 try: batch.append(self.queue.get_nowait())
                 except queue.Empty: break
-            self.busy = True
             try:
-                with self.lock: self._run(batch)
-            except Exception as e:   # answer every waiting request; the thread lives on
-                for _, done in batch:
-                    if not done.done(): done.set_exception(e)
-            finally:
-                self.busy = False
-            if graphs is not None and graphs.pending and max(graphs.eager_runs.values()) >= HOT_BUCKET:
-                self._capture(graphs)                              # busy, but this bucket keeps running eagerly
+                with self.lock: results = self._run([enc for enc, _ in batch])
+            except Exception as e:   # every request of the batch gets the error; the thread lives on
+                results = [e] * len(batch)
+            for (_, done), result in zip(batch, results):
+                (done.set_exception if isinstance(result, Exception) else done.set_result)(result)
+                self.queue.task_done()
+            if graphs is not None and graphs.capture_due(idle=False):
+                with self.lock: graphs.capture_pending(limit=1)
 
-    def _capture(self, graphs):
-        self.busy = True
-        try:
-            with self.lock: graphs.capture_pending(limit=1)
-        finally:
-            self.busy = False
-
-    def _run(self, batch):
-        cache, encs = self.prefix_cache, [enc for enc, _ in batch]
+    def _run(self, encs):
+        """One batch through model.probs_batch, with the prefix cache. -> per request (probs, stats)."""
+        cache = self.prefix_cache
         states = [enc["seg"].count(0) for enc in encs]
         keys = [(tuple(enc["ids"][:Ls]), bool(enc.get("option_isolation"))) for enc, Ls in zip(encs, states)]
-        cached = [bool(PREFIX_CACHE_SIZE) and Ls >= self.prefix_min_tokens for Ls in states]
-        prefixes = [cache.get(k) if c else None for k, c in zip(keys, cached)]
+        cacheable = [bool(PREFIX_CACHE_SIZE) and Ls >= self.prefix_min_tokens for Ls in states]
+        prefixes = [cache.get(k) if c else None for k, c in zip(keys, cacheable)]
         sync(self.device); t = time.time()
-        if getattr(self.model, "graphs", None) is not None:
-            ps, new = self.model.probs_batch(encs, prefixes)
-        else:   # every other backend: one request at a time, as before batching
-            ps, new = map(list, zip(*[(self.model.probs(e), None) if not use else (self.model.probs_with_prefix(e, p), p) if p is not None
-                                      else self.model.probs_and_prefix(e) for e, p, use in zip(encs, prefixes, cached)]))
+        ps, kept = self.model.probs_batch(encs, prefixes, cacheable)
         sync(self.device); dt = round((time.time() - t) * 1000, 1)
-        self.batches += 1; self.batched_requests += len(batch)
-        for (enc, done), key, use, prefix, fresh, p, Ls in zip(batch, keys, cached, prefixes, new, ps, states):
-            if use:
-                cache.pop(key, None); cache[key] = fresh              # (re)insert = most recently used
-                while len(cache) > PREFIX_CACHE_SIZE: cache.pop(next(iter(cache)))
-                self.prefix_hits += prefix is not None; self.prefix_misses += prefix is None
-            done.set_result(([q.tolist() for q in p], {"tokens": len(enc["ids"]), "state_tokens": Ls, "latency_ms": dt, "prefix_cache_hit": prefix is not None}))
+        self.batches += 1; self.batched_requests += len(encs)
+        for key, use, prefix, fresh in zip(keys, cacheable, prefixes, kept):
+            if not use: continue
+            cache.pop(key, None); cache[key] = fresh              # (re)insert = most recently used
+            while len(cache) > PREFIX_CACHE_SIZE: cache.pop(next(iter(cache)))
+            self.prefix_hits += prefix is not None; self.prefix_misses += prefix is None
+        return [([q.tolist() for q in p], {"tokens": len(enc["ids"]), "state_tokens": Ls, "latency_ms": dt, "prefix_cache_hit": prefix is not None})
+                for enc, p, Ls, prefix in zip(encs, ps, states, prefixes)]
 
     def wait_idle(self):
-        """Block until nothing is queued or running and no CUDA graph waits to be captured (benchmarks, warm-up)."""
+        """Block until every submitted request is answered and no CUDA graph waits to be captured (benchmarks, warm-up)."""
+        self.queue.join()
         graphs = getattr(self.model, "graphs", None)
-        while not self.queue.empty() or self.busy or (graphs is not None and graphs.pending): time.sleep(0.01)
+        while graphs is not None and graphs.capture_due(idle=True): time.sleep(0.01)
+        with self.lock: pass                                   # a capture in progress finishes
 
     def answer(self, req):
         """The /v1/systemone response body for one request."""
         rec, meta = to_record(prepare(req))
-        ps, m = self.probs(rec)
+        return self._body(req, meta, *self.probs(rec))
+
+    async def answer_async(self, req):
+        """answer() for the event loop: a request waiting on the model thread holds no worker thread, so a container takes
+        as many concurrent requests as its batches can absorb (FastAPI runs sync endpoints on a 40-thread pool)."""
+        rec, meta = to_record(prepare(req))
+        return self._body(req, meta, *await asyncio.wrap_future(self.submit(rec)))
+
+    def _body(self, req, meta, ps, m):
         answers = to_answers(ps, meta)
         return {"model": req.model, "answers": answers, "usage": {"input_tokens": m["tokens"], "output_tokens": output_tokens(self.tok, answers)}, "latency_ms": m["latency_ms"]}
 
@@ -163,9 +168,9 @@ def server() -> Server:
 
 
 @app.post("/v1/systemone")
-def systemone(req: SystemOneRequest):
+async def systemone(req: SystemOneRequest):
     """TypeSafe-compatible endpoint: typed questions in, typed answers out, one prefill pass."""
-    return server().answer(req)
+    return await server().answer_async(req)
 
 
 class PermuteSystemOne(BaseModel):
@@ -211,7 +216,7 @@ def models():
             "release_date": s.release_date,
             "run": ck.requested, "base": meta.base, "lora": meta.lora, "device": s.device, "backend": s.model.backend, "dtype": s.model.dtype,
             "temperature": s.model.head.temperature,
-            "cuda_graphs": {"captured": graphs.captures, "kept": len(graphs.graphs)} if (graphs := getattr(s.model, "graphs", None)) else None,
+            "cuda_graphs": graphs.stats() if (graphs := getattr(s.model, "graphs", None)) else None,
             "prefix_cache": {"size": PREFIX_CACHE_SIZE, "min_state_tokens": s.prefix_min_tokens, "hits": s.prefix_hits,
                              "misses": s.prefix_misses, "cached_states": len(s.prefix_cache)},
             "batches": {"count": s.batches, "requests": s.batched_requests, "queued": s.queue.qsize()}}

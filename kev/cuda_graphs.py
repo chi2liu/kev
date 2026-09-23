@@ -51,6 +51,7 @@ GRAPH_STATES = 16      # states per state pass: the bank's entries
 BANK_WIDTH = 4096      # positions per bank entry (states are right-aligned in it; about 2 GB for 16 entries on Kev-4B and 9B)
 GRAPHS_KEPT = 256      # captured graphs kept, least recently used evicted (a busy server met ~160 on mixed traffic)
 PAD_SPLIT = 4096       # padded tokens under which a batched pass is never split by length (see length_groups)
+HOT_BUCKET = 3         # eager passes after which a busy server captures a bucket's graph anyway (capture_due)
 
 
 def bucket(n, steps=8, floor=16):
@@ -139,10 +140,11 @@ class CudaGraphs:
     def __init__(self, lm, pad_id):
         self.lm, self.pad_id = lm, pad_id
         self.device, self.dtype = next(lm.parameters()).device, next(lm.parameters()).dtype
-        self.pool = torch.cuda.graph_pool_handle()
+        self.pool, self.stream = torch.cuda.graph_pool_handle(), torch.cuda.Stream()   # the graphs' shared memory pool, the capture stream
         self.graphs = OrderedDict()   # key -> (graph, input buffer)
         self.pending = {}             # key -> (pass body, input buffer): buckets that ran eagerly, not captured yet
         self.eager_runs = {}          # key -> how many passes of a pending bucket ran eagerly
+        self.failed = {}              # key -> why its capture failed; the bucket keeps running eagerly
         self.captures = 0
         probe = DynamicCache(config=lm.config)   # learn the cache layout (layer kinds, state shapes, dtypes) from one eager pass
         with torch.no_grad():
@@ -180,6 +182,8 @@ class CudaGraphs:
         if key in self.graphs:
             self.graphs.move_to_end(key)
             graph, buf = self.graphs[key]
+        elif key in self.failed:
+            graph, buf = None, torch.zeros((len(rows), len(rows[0])), dtype=torch.long, device=self.device)
         else:
             graph, buf = None, self.pending.setdefault(key, (body, torch.zeros((len(rows), len(rows[0])), dtype=torch.long, device=self.device)))[1]
             self.eager_runs[key] = self.eager_runs.get(key, 0) + 1
@@ -189,21 +193,75 @@ class CudaGraphs:
 
     @torch.no_grad()
     def capture_pending(self, limit=None):
-        """Capture graphs for up to `limit` (None = all) buckets that have run eagerly. The caller must keep other passes
-        out (kev.serve captures on its model thread, one graph at a time when no request is waiting). Each capture
-        overwrites the shared buffers, which is fine between passes: a pass refills them. The warm-up pass runs on a side
-        stream first: Triton autotuning and cuBLAS setup must not happen inside a capture. thread_local: CUDA calls of
-        other threads (a request tokenizing, a model card read) cannot invalidate the capture."""
+        """Capture graphs for up to `limit` (None = all) buckets that have run eagerly, the most-run first. The caller must
+        keep other passes out (kev.serve captures on its model thread). Each capture overwrites the shared buffers, which is
+        fine between passes: a pass refills them. On a side stream, a warm-up pass first (Triton autotuning and cuBLAS
+        setup must not happen inside a capture), then the capture; not torch.cuda.graph, whose synchronize, gc.collect and
+        empty_cache on entry would stall a busy server for each capture. thread_local: CUDA calls of other threads (a
+        request tokenizing, a model card read) cannot invalidate the capture. A capture that fails leaves its bucket running
+        eagerly, for good."""
         for _ in range(len(self.pending) if limit is None else min(limit, len(self.pending))):
-            key = max(self.pending, key=self.eager_runs.get)             # the bucket that ran eagerly most often first
+            key = max(self.pending, key=self.eager_runs.get)
             (body, buf), _ = self.pending.pop(key), self.eager_runs.pop(key)
-            stream = torch.cuda.Stream(); stream.wait_stream(torch.cuda.current_stream())
-            with torch.cuda.stream(stream): body(buf)
-            torch.cuda.current_stream().wait_stream(stream)
-            graph = torch.cuda.CUDAGraph()
-            with torch.cuda.graph(graph, pool=self.pool, capture_error_mode="thread_local"): body(buf)
+            current, graph = torch.cuda.current_stream(), torch.cuda.CUDAGraph()
+            self.stream.wait_stream(current)
+            try:
+                with torch.cuda.stream(self.stream):
+                    body(buf)                                       # warm-up: autotuning and lazy setup happen outside the capture
+                    graph.capture_begin(pool=self.pool, capture_error_mode="thread_local")
+                    try: body(buf)
+                    finally: graph.capture_end()
+            except Exception as e:   # e.g. out of memory for a new shape: serve it eagerly rather than stop serving
+                # a failed capture_end leaves the allocator routing this thread's allocations into the graph pool, which
+                # would fail every later capture and let eager passes allocate graph memory: end that explicitly
+                try: torch._C._cuda_endAllocateToPool(self.device.index, self.pool)
+                except RuntimeError: pass
+                self.failed[key] = f"{type(e).__name__}: {e}"
+                print(f"kev.cuda_graphs: capturing {key} failed, it runs eagerly: {self.failed[key]}", flush=True)
+                continue
+            finally:
+                current.wait_stream(self.stream)
             self.graphs[key] = (graph, buf); self.captures += 1
             while len(self.graphs) > GRAPHS_KEPT: self.graphs.popitem(last=False)
+
+    def capture_due(self, idle):
+        """Capture one pending graph now? Always when idle; under load once a bucket keeps running eagerly (HOT_BUCKET
+        eager passes), because a request arriving meanwhile waits for the capture (~0.4 s)."""
+        return bool(self.pending) and (idle or max(self.eager_runs.values()) >= HOT_BUCKET)
+
+    def stats(self):
+        return {"captured": self.captures, "kept": len(self.graphs), "pending": len(self.pending), "failed": len(self.failed)}
+
+    # Batched serving: which requests the graphed passes take, and one batch of them
+
+    @staticmethod
+    def admits(state_len, row_lens, cached):
+        """Whether a request's passes fit the graphed passes: its rows, and its state (a new one runs the graphed state
+        pass; a cached one only has to fit the bank)."""
+        return bucket(max(row_lens)) <= GRAPH_ROW and (state_len <= BANK_WIDTH if cached else bucket(state_len) <= GRAPH_STATE)
+
+    @torch.no_grad()
+    def run(self, requests):
+        """requests = [(state ids, state positions, rows, cached prefix cache or None)], each admitted. Returns, per
+        request, its rows' hidden states and its state's cache (the cached one, or a new one). States of a similar length
+        share a state pass (identical states once); each request takes one bank entry, so at most GRAPH_STATES per group."""
+        hidden, caches = [None] * len(requests), [None] * len(requests)
+        for group in length_groups([len(S) for S, _, _, _ in requests], GRAPH_STATES):
+            new = {}                                                 # distinct new states of the group, in order
+            for i in group:
+                S, Sp, _, cached = requests[i]
+                if cached is None: new.setdefault(tuple(S), (S, Sp))
+            made = dict(zip(new, self.states(list(new.values()), bucket(max(map(len, new)))))) if new else {}
+            entry = {S: j for j, S in enumerate(new)}                # cached states go into the entries after the new ones
+            rows, sources, free = [], [], len(new)
+            for i in group:                                          # after the state pass: its padded entries are written
+                S, _, rs, cached = requests[i]
+                if cached is None: e, caches[i] = entry[tuple(S)], made[tuple(S)]
+                else: e, free, caches[i] = free, free + 1, cached; self.load_state(e, cached, len(S))
+                rows += rs; sources += [(e, len(S))] * len(rs)
+            out = iter(self.rows(rows, sources))
+            for i in group: hidden[i] = [next(out) for _ in requests[i][2]]
+        return hidden, caches
 
     def _bank(self):
         """The bank, viewed once for all: attention [GRAPH_STATES, heads, BANK_WIDTH, dim] (states right-aligned at the
@@ -290,10 +348,9 @@ class CudaGraphs:
 
     # Single-request forms, for DecisionModel.prefix / _rows_hidden (tests, scripts, the unbatched callers)
     def prefix(self, ids, pos):
-        Sb = bucket(len(ids))
-        return self.states([(ids, pos)], Sb)[0] if Sb <= GRAPH_STATE else None
+        return self.states([(ids, pos)], bucket(len(ids)))[0] if bucket(len(ids)) <= GRAPH_STATE else None
 
     def branches(self, rows, cache, prefix_len):
-        if bucket(max(len(ids) for ids, _ in rows)) > GRAPH_ROW or prefix_len > BANK_WIDTH: return None
+        if not self.admits(prefix_len, [len(ids) for ids, _ in rows], cached=True): return None
         self.load_state(0, cache, prefix_len)
         return self.rows(rows, [(0, prefix_len)] * len(rows))

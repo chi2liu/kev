@@ -187,7 +187,7 @@ def test_cuda_graphs_match_eager():
         m.graphs = None; refs = [m.probs(e) for e in encs]
         m.graphs = graphs; prefixes = [None] * len(encs); prefixes[1] = m.prefix(encs[1])
         for _ in range(2):   # first run: new buckets run eagerly; second: replayed
-            got, new = m.probs_batch(encs, prefixes)
+            got, new = m.probs_batch(encs, prefixes, [True] * len(encs))
             graphs.capture_pending()
         for ref, ps, p in zip(refs, got, new):
             assert p is not None and all((a - b).abs().max() < 0.05 for a, b in zip(ref, ps))
