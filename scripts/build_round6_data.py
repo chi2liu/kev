@@ -15,6 +15,10 @@ Each variant is written to evals/round6/<variant>/train.jsonl with a manifest ca
     soft-longmix3  long v3 + ambiguity soft (more 4k and 6k records)
     soft-half      1,400 long v2 records (200 / 200 / 500 / 500, fixed seed) + ambiguity soft (half the long records, for 4B)
 
+B1 v2 (PLAN_27b, Kev-27B from the base; `--b1v2`):
+    b1v2    decision-v7 train with the threshold-0.8 ambiguity targets applied in place (MNLI records' targets removed)
+            + dates / unknowable + the soft-half long-state subsample (1,400)
+
 Round 2 (two-knob combinations of round-1 arms; `--round2`):
     soft-nomnli-thr08   long v2 + ambiguity targets at threshold 0.8 with the MNLI records' targets removed
     soft-half-nomnli    1,400 long v2 records + ambiguity soft with the MNLI records' targets removed
@@ -91,8 +95,18 @@ def round2():
     write_variant("soft-half-nomnli", [(LONG_V2, half_long(LONG_V2)), (SOFT, without_mnli_targets(SOFT))], "1,400 long v2 records (200/200/500/500, seed round6-soft-half) + ambiguity soft, MNLI records' targets removed")
 
 
+def b1v2():
+    from kev.suite import load_split
+    soft = {r["_meta"]["id"]: r for r in without_mnli_targets("evals/round6/ambiguity-thr08/soft.jsonl")}
+    v7 = [soft.get(r["_meta"]["id"], r) for r in load_split("evals/v7/decision-v7", "train")]
+    if sum(r["_meta"]["id"] in soft for r in v7) != len(soft): raise ValueError("an ambiguity record is not in decision-v7 train")
+    write_variant("b1v2", [("evals/v7/decision-v7/train.jsonl", v7), (DU, read_jsonl(ROOT / DU)), (LONG_V2, half_long(LONG_V2))],
+                  "decision-v7 train with threshold-0.8 ambiguity targets in place (MNLI targets removed) + dates/unknowable + 1,400 long v2 records (200/200/500/500)")
+
+
 def main():
     if "--round2" in sys.argv: return round2()
+    if "--b1v2" in sys.argv: return b1v2()
     long_v2, soft = read_jsonl(ROOT / LONG_V2), read_jsonl(ROOT / SOFT)
     lam03, thr08 = ambiguity("ambiguity-lam03", lam=0.3), ambiguity("ambiguity-thr08", threshold=0.8)
     write_variant("soft-nomnli", [(LONG_V2, long_v2), (SOFT, without_mnli_targets(SOFT))], "long v2 + ambiguity soft, MNLI records' targets removed")

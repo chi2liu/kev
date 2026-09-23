@@ -173,3 +173,4 @@ evals/round6/soft-*/train.jsonl
 !runs/r6-verdict/*.json
 !runs/r6-*/rows.json
 !runs/r5r-C*-wanli2/rows.json
+evals/round6/b1v2/train.jsonl
