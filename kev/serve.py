@@ -9,7 +9,7 @@ comparison). KEV_PREFIX_CACHE / KEV_PREFIX_MIN_TOKENS size the state-prefix cach
 date preprocessing (api.with_date_facts). Backend and precision follow LoadOptions (KEV_BACKEND, KEV_DTYPE, ...): on Apple
 Silicon the hybrid Qwen3.5 checkpoints run on MLX by default, elsewhere on torch in bf16.
 """
-import argparse, asyncio, atexit, hmac, os, queue, random, threading, time, uuid
+import argparse, asyncio, atexit, hmac, os, queue, random, sys, threading, time, uuid
 from concurrent.futures import Future
 import torch
 from dataclasses import dataclass, field, replace
@@ -53,6 +53,9 @@ class Server:
     def __post_init__(self):
         self.release_date = self.release_date or self.checkpoint.release_date()
         self.queue, self.stopping = queue.Queue(), threading.Event()
+        # the model thread gives up the GIL at every CUDA sync and waits to get it back while the event loop parses and
+        # answers requests; at Python's default 5 ms switch interval those waits stretched a batch's model time ~2x
+        sys.setswitchinterval(0.0005)
         self.thread = threading.Thread(target=self._work, name="kev-model", daemon=True)
         self.thread.start()
         atexit.register(self.close)   # a daemon thread killed inside a CUDA call at interpreter exit aborts the process
