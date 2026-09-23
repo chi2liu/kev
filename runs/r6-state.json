@@ -124,6 +124,27 @@
     "trial-1": "fc-01M37SRZZBKBW7A3KYAPSG6SYJ"
    },
    "status": "running"
+  },
+  "r7-docs": {
+   "bound_usd": 87.71,
+   "timeout": 12600,
+   "launched_utc": "2026-09-23T22:12Z",
+   "calls": {
+    "trial-0": "fc-01M3851M9PVQPZY77CTV3PJ18J",
+    "trial-1": "fc-01M3851MBJS4DFHA84W2TF6J82",
+    "trial-2": "fc-01M3851ME535EW6P9VWRJZN5Q3",
+    "trial-3": "fc-01M3851MG3DC4QNDE4Z2NHXQD6"
+   },
+   "status": "running"
+  },
+  "r7-docs-27b": {
+   "bound_usd": 50.12,
+   "timeout": 28800,
+   "launched_utc": "2026-09-23T22:12Z",
+   "calls": {
+    "trial-0": "fc-01M3851TRZXZ7RHSYMDBSFP2G3"
+   },
+   "status": "running"
   }
  },
  "reads": {
