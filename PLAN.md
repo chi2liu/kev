@@ -98,6 +98,18 @@ Reported, never gating:
 
 **Next (to be registered, not read):** the 9B recipe minus the MNLI soft targets (keep them hard) isolates the WANLI question. It needs fresh panels (both round-5 panels have now been read by these candidates) and a WANLI panel disjoint from the 256 items, large enough that a 1 pp point threshold is not three questions. The external gates in this round were point estimates on 89–256 questions; the next registration should use paired intervals with a margin sized to the suite.
 
+## Round 8 - documents delta at 0.8B / 4B, guards sized to the suites (registered 2026-09-23T23:15Z, before any training or read)
+
+**Why.** Round 7's 0.8B and 4B arms gained +22.5 and +8.4 pp on `documents-v1` development (4B +2.6 pp [+0.5, +4.6] above Jev) with pooled externals flat (+0.4 [−0.8, +1.6], +0.0 [−1.0, +1.1]), and failed only per-suite lower bounds on suites too small to resolve a −3 pp floor (SemIf 144 questions, TypeSafe 89) plus, at 4B, WANLI-v2 (−1.3, bound −2.6) and, at 0.8B, the short-state accuracy bound (−0.9, bound −3.2). Round 7's verdicts stand: no 0.8B or 4B candidate. This round tests the same recipe at a **new seed** under guards sized to what each suite can resolve, so that the decision is not made on the reads that motivated it; the fresh confirmation sets (`documents-v1` test, `documents-v2`) are still unread by any model.
+
+**Arms** (study `r8-small`, `experiments/round8/small.json`): round 7's recipe exactly, seed 2: Kev-4B from `jaredpalmer/kev-4b` (lr 2e-5, `batch 2, accum 4`) and Kev-0.8B from `jaredpalmer/kev-0.8b` (lr 4e-5, `batch 4, accum 2`); one epoch, `data evals/documents-v1/train.jsonl`, `replay 2000`, `max_state 7552`, `p_none_pair 0.25`, bf16, checkpointing; H200, timeout 10,800 s. Reads `runs/r8-<arm>-{docs,semif,scienthoon,wanli2,typesafe,v9}`; read-out `scripts/round8_readout.py`.
+
+**Rule, per arm against its released parent** (bootstraps and temperatures as round 7):
+1. Primary: `documents-v1` development accuracy, paired lower bound > 0.
+2. Short-state guard (`transfer-v4` development, 656 questions, interval half-width about 1.7 pp): accuracy lower bound ≥ −2 pp; Brier upper bound ≤ +0.01; confident-error rate upper bound ≤ +1 pp.
+3. External guards: WANLI-v2 (1,002) and scienthoon (900) accuracy lower bound ≥ −2 pp each; pooled over all four external suites lower bound ≥ −1.5 pp; `transfer-v9` unknowable share at p ≥ 0.9 ≤ 0.05. SemIf-144 and TypeSafe-89 are reported with intervals and do not gate on their own (they enter the pooled guard).
+4. Confirmation, once per passing arm with its parent: `documents-v1` test paired accuracy lower bound > 0; locked `transfer-v4` (`locked_test --name kev-<size>-r8`): locked accuracy ≥ parent − 1 pp and served Brier ≤ parent + 0.005; `documents-v2` (private) read and reported, not gating. A size that passes 1-4 is a release candidate; a card must say the gain is measured in-distribution (the training split shares source and question templates with every documents suite).
+
 ## Round 7 - documents delta (registered 2026-09-23T22:15Z, before any training or read)
 
 **Why.** On `evals/documents-v1` development (920 real CFPB-complaint questions; PLAN_27b "documents-v1 result"), Jev leads the released Kev-9B by 3.6 pp [1.2, 6.0] and 0.079 Brier, concentrated in the issue question (82.1 vs 74.9) and long narratives (88.5 vs 81.3); round 5/6 long-state training moved this suite by −0.4 / −0.8 pp. This round trains on real documents: `documents-v1` train (5,219 records, 7,488 teacher-agreed questions).
