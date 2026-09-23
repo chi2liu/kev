@@ -1,0 +1,185 @@
+{
+ "t0_local": "2026-09-22T22:03:00-04:00",
+ "t0_utc": "2026-09-23T02:03:00Z",
+ "baseline_metered_usd": 543.09687061,
+ "budget_usd": 1000,
+ "phase": "follow-up: 27B two-epoch seeds 1,2 running",
+ "studies": {
+  "r6-a1-4b": {
+   "bound_usd": 25.06,
+   "timeout": 7200,
+   "launched_utc": "2026-09-23T02:13Z",
+   "calls": {
+    "trial-0": "fc-01M360M7V030QHDXXCAD7PVMWT",
+    "trial-1": "fc-01M360M7XJCP2T4C2T77TZ4FJZ"
+   },
+   "status": "done, pulled"
+  },
+  "r6-a1-9b": {
+   "bound_usd": 18.8,
+   "timeout": 10800,
+   "launched_utc": "2026-09-23T02:13Z",
+   "calls": {
+    "trial-0": "fc-01M360NB212EX66VEET1WNBYCT"
+   },
+   "status": "done, pulled"
+  },
+  "r6-27b": {
+   "bound_usd": 75.18,
+   "timeout": 14400,
+   "launched_utc": "2026-09-23T02:13Z",
+   "calls": {
+    "trial-0": "fc-01M360PD8Z49MN3NZEWZR5WGJ5",
+    "trial-1": "fc-01M360PDB45PN1742P7QXWBB96",
+    "trial-2": "fc-01M360PDDTSS2NVQD1Z89NK3WK"
+   },
+   "status": "done, pulled"
+  },
+  "r6-9b": {
+   "bound_usd": 153.5,
+   "timeout": 12600,
+   "launched_utc": "2026-09-23T02:13Z",
+   "calls": {
+    "trial-0": "fc-01M360QFJSVXX6YFR60GT3JBZZ",
+    "trial-1": "fc-01M360QFN019ZWM2XHVSQ3W71F",
+    "trial-2": "fc-01M360QFQ0H6SDFDG2SPM32CZJ",
+    "trial-3": "fc-01M360QFSMCKY5417SJ8TTR46N",
+    "trial-4": "fc-01M360QFW75ET1P17HQC78ZQRX",
+    "trial-5": "fc-01M360QFY7Q6XYCVEBRG1A7QEF",
+    "trial-6": "fc-01M360QG06VDDYRN5N9V3SM1ZV"
+   },
+   "status": "done, pulled"
+  },
+  "r6-4b": {
+   "bound_usd": 112.77,
+   "timeout": 10800,
+   "launched_utc": "2026-09-23T02:13Z",
+   "calls": {
+    "trial-0": "fc-01M360RJ2561T6DRE9RX58ZSTT",
+    "trial-1": "fc-01M360RJ4J4A350M1GXHK49ATS",
+    "trial-2": "fc-01M360RJ6GS9Z9N2CT2C1MSWAT",
+    "trial-3": "fc-01M360RJ8F4P9XKSW5035JG3QY",
+    "trial-4": "fc-01M360RJAMQR5YRZ6P196H5P2K",
+    "trial-5": "fc-01M360RJD4KTRE65M499R903X9"
+   },
+   "status": "done, pulled"
+  },
+  "r6-08b": {
+   "bound_usd": 25.06,
+   "timeout": 7200,
+   "launched_utc": "2026-09-23T02:13Z",
+   "calls": {
+    "trial-0": "fc-01M360SMMM2KMQW7K73TAGCNC5",
+    "trial-1": "fc-01M360SMPPDH9J0AE9QCQVNM09"
+   },
+   "status": "done, pulled"
+  },
+  "r6-9b-r2": {
+   "bound_usd": 65.78,
+   "timeout": 12600,
+   "launched_utc": "2026-09-23T06:17Z",
+   "calls": {
+    "trial-0": "fc-01M36DAYX1F53AG68QQA7G11Z6",
+    "trial-1": "fc-01M36DAYZB33RB8R3P59XTSBHA",
+    "trial-2": "fc-01M36DAZ1EKHKJ3XPE5JF886PG"
+   },
+   "status": "done, pulled"
+  },
+  "r6-4b-r2": {
+   "bound_usd": 56.39,
+   "timeout": 10800,
+   "launched_utc": "2026-09-23T06:17Z",
+   "calls": {
+    "trial-0": "fc-01M36DC0VCDZ0E5AGVTQQG0KNW",
+    "trial-1": "fc-01M36DC0XB392D939BMA0H8WV7",
+    "trial-2": "fc-01M36DC0ZF44ASEN6HEGCERJPR"
+   },
+   "status": "done, pulled"
+  },
+  "r6-08b-r2": {
+   "bound_usd": 12.53,
+   "timeout": 7200,
+   "launched_utc": "2026-09-23T06:17Z",
+   "calls": {
+    "trial-0": "fc-01M36DD31ERMGCGKAWB7V03MDP"
+   },
+   "status": "done, pulled"
+  },
+  "r6-27b-2ep": {
+   "bound_usd": 100.2,
+   "timeout": 28800,
+   "launched_utc": "2026-09-23T12:41Z",
+   "calls": {
+    "trial-0": "fc-01M374FRAJEAK0KD0RT7S2XKBY",
+    "trial-1": "fc-01M374FRD49GN7PP1PF8Q78TXX"
+   },
+   "status": "running"
+  }
+ },
+ "reads": {
+  "r6-wanli2-baselines": "6 jobs launched 02:30Z (parents+incumbents on wanli-v2), pending GPU capacity",
+  "r6-reads-27b": "10 jobs (27B A,B: v9 + 4 externals) launched 04:35Z",
+  "r6-reads-08b-1": "08b combined long panel",
+  "r6-reads-9b-1..3": "25 jobs launched 04:53Z: 9B arms soft-nomnli/lam03/thr08/du x (long, semif, scienthoon, wanli2, typesafe, v9) + 08b replay6000 long",
+  "r6-reads-4b-1/2": "4B soft-half + soft-nomnli: externals+v9 (3600 s) and long (5400 s), launched 06:19Z",
+  "r6-reads-r1b-1..3": "launched 06:28Z: 9B lr1e-5 (6), 4B soft-du (6), 4B lr1e-5 (6) minus long moved to batch 3; long reads for 9B lr1e-5, 9B longmix3, 4B du, 4B lr1e-5, 4B longmix3"
+ },
+ "pulled": [
+  "r6-a1-4b"
+ ],
+ "pending": [],
+ "spend_readings": [
+  {
+   "utc": "2026-09-23T02:03:00Z",
+   "metered": 543.09687061
+  },
+  {
+   "utc": "2026-09-23T02:11Z",
+   "metered": 543.47
+  },
+  {
+   "utc": "2026-09-23T03:42Z",
+   "metered": 633.18
+  },
+  {
+   "utc": "2026-09-23T04:33Z",
+   "metered": 667.84
+  },
+  {
+   "utc": "2026-09-23T06:12Z",
+   "metered": 734.19
+  },
+  {
+   "utc": "2026-09-23T06:28Z",
+   "metered": 766.53
+  },
+  {
+   "utc": "2026-09-23T08:45Z",
+   "metered": 855.19
+  },
+  {
+   "utc": "2026-09-23T12:39Z",
+   "metered": 836.99
+  }
+ ],
+ "incidents": [],
+ "results": {
+  "a1_4b": "negative: transfer -6.0/-3.4 pp vs same-seed full placement (CIs exclude 0), deadline 0.50/0.53 (full 0.53/0.55), pairs 0.53/0.56 (0.75/0.78); wall 65 min each",
+  "a1_9b": "negative: transfer -3.5 pp [-6.1,-1.1] vs full seed 1; deadline 0.75 (0.72); pairs 0.59 (0.80); cov5 0.36 vs 0.52",
+  "27b_A_lr5e-5": "transfer 0.849 (+2.7 pp [-0.15,+5.6] vs Kev-9B; lower bound not > 0), deadline 0.975, MMLU 0.863, pairs 0.92, cov5 0.72, Brier 0.215; composition_held_conditional -6.2 pp vs 9B (>3 pp): not a candidate by rule; isolation gate fails (bf16 weights)",
+  "27b_B_lr2e-5": "transfer 0.840 (+1.8 [-1.2,+4.7]), deadline 1.00, MMLU 0.838, cov5 0.66; conditional -9.4 pp",
+  "27b_C_question": "transfer 0.840 (+1.8 [-1.4,+4.9]), deadline 0.97, MMLU 0.850, pairs 0.89, cov5 0.645, conditional -21.9 pp; question-side does not help at 27B either",
+  "27b_A_v9": "MMLU-Pro 0.655 (>=0.65 met), unknowable share 0.036 (met); externals semif 0.951 scienthoon 0.773 wanli2 0.751 typesafe 0.843 (9B parent: 0.910/0.755/0.740/0.820). Not a candidate by rule: paired lower bound -0.0015 (needs >0) and composition_held_conditional -6.2 pp (2 of 32 questions; rule allows -3 pp)",
+  "27b_B_v9": "MMLU-Pro 0.615 (fails), unknowable share 0.164 (fails)",
+  "wanli2_baselines": "P9 0.740 C9 0.720 (-2.0 pp); P4 0.699 C4 0.691; P08 0.570 C08 0.559: the soft-target WANLI dip replicates on 1,002 fresh items",
+  "08b_round1": "both arms fail the short guard on dev (lr2e-5: conf-err upper +3.0 pp; replay6000: acc lower -3.2 pp, brier upper +2.4)",
+  "9b_round1_short_guard": "all four finished arms pass on dev (nomnli, lam03, thr08, du); externals+long reads launched",
+  "9b_round1": "no arm passes all guards on selection sets: nomnli fails only short acc lower bound (-1.4 vs -1.0); thr08 (long +20.0) fails wanli2 (-1.6, lb -3.1) and pooled; lam03 like incumbent; du costs scienthoon/wanli",
+  "round1_short_guard_more": "9B longmix3 fails acc lb (-1.5); 9B lr1e-5 passes; 4B du passes, longmix3 fails (-1.1), lr1e-5 passes; 4B soft-half fails externals (scienthoon -4.1, typesafe -5.6); 4B nomnli fails pooled (-0.3 point; typesafe -3.4)"
+ },
+ "final": {
+  "confirmations": "none (no arm passed rules 1-3 on selection sets; fresh panels transfer-r6 / longstate-v3 unread)",
+  "locked_reads": "none",
+  "round_spend_usd": 312.09
+ }
+}
