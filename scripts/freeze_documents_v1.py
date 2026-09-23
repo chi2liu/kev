@@ -2,12 +2,14 @@
 adjudication queue and, once adjudications exist, the frozen suite.
 
     uv run python scripts/freeze_documents_v1.py --report                  # agreement tables, writes the adjudication queue
+    uv run python scripts/freeze_documents_v1.py --combine                 # two independent adjudications -> adjudications.jsonl
     uv run python scripts/freeze_documents_v1.py --freeze evals/documents-v1  # needs runs/documents-v1-work/adjudications.jsonl
 
 Rules (PLAN_27b, B2 revised). Train: a question keeps its native label only if both teachers chose it; otherwise the
 question is dropped (a record with no question left is dropped). Development and test: a question is verified if all three
-judges chose the native label; every other question goes to the adjudication queue, and its adjudication decides it
-(keep the native label, relabel with a reason, or drop). Unparsed judge answers count as disagreement.
+judges chose the native label; every other question goes to the adjudication queue and is adjudicated twice,
+independently (runs/documents-v1-work/adjudication/out and out2); it is decided only where both agree, otherwise dropped.
+Unparsed judge answers count as disagreement.
 """
 import argparse, hashlib, json, random, sys
 from collections import Counter
@@ -69,7 +71,7 @@ def eval_split(split, adjudications):
                           "proposed_label": q["label"], "label_origin": "native", "judges": [{"model": m, "label": v[0], "rationale": v[1]} for m, v in votes.items()], "adjudication": None})
             adj = adjudications.get(item)
             if adj is None: c["awaiting_adjudication"] += 1; continue
-            if adj["verdict"] == "drop": c["dropped"] += 1; continue
+            if adj["verdict"] == "drop": c["dropped_agreed" if adj.get("agreed") else "dropped_disagreement"] += 1; continue
             label = q["label"] if adj["verdict"] == "accept" else adj["label"]
             assert label in q["criteria"], item
             qs[qid] = {**strip(q), "label": label}; c["kept_native" if adj["verdict"] == "accept" else "relabelled"] += 1
@@ -77,9 +79,41 @@ def eval_split(split, adjudications):
     return kept, queue, dict(c)
 
 
+def read_verdicts(directory):
+    out = {}
+    for path in sorted(Path(directory).glob("shard-*.jsonl")):
+        for line in open(path):
+            line = line.strip()
+            if not line.startswith("{"): continue
+            try: r = json.loads(line)
+            except json.JSONDecodeError: continue
+            if r.get("verdict") in ("accept", "relabel", "drop"): out[r["id"]] = r
+    return out
+
+
+def combine():
+    """Agreement of two independent adjudications decides an item; any disagreement (or a missing verdict) drops it."""
+    queue = [json.loads(l)["id"] for l in open(WORK / "adjudication_queue.jsonl")]
+    a, b = read_verdicts(WORK / "adjudication" / "out"), read_verdicts(WORK / "adjudication" / "out2")
+    rows, c = [], Counter()
+    for item in queue:
+        x, y = a.get(item), b.get(item)
+        key = lambda v: (v["verdict"], v.get("label") if v["verdict"] == "relabel" else None)
+        if x and y and key(x) == key(y):
+            rows.append({"id": item, "verdict": x["verdict"], "label": x.get("label") if x["verdict"] == "relabel" else None, "reasons": [x.get("reason", ""), y.get("reason", "")], "agreed": True}); c["agreed_" + x["verdict"]] += 1
+        else:
+            rows.append({"id": item, "verdict": "drop", "label": None, "reasons": [(x or {}).get("reason", "missing"), (y or {}).get("reason", "missing")], "agreed": False,
+                         "verdicts": [(x or {}).get("verdict"), (y or {}).get("verdict")]}); c["disagreed_dropped" if x and y else "missing_dropped"] += 1
+    write_jsonl(WORK / "adjudications.jsonl", rows)
+    decided = sum(v for k, v in c.items() if k.startswith("agreed"))
+    print(dict(c), f"adjudicator agreement {decided}/{len(queue)} = {decided / len(queue):.3f}")
+    return dict(c)
+
+
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--report", action="store_true"); ap.add_argument("--freeze", default="")
+    ap = argparse.ArgumentParser(); ap.add_argument("--report", action="store_true"); ap.add_argument("--freeze", default=""); ap.add_argument("--combine", action="store_true")
     a = ap.parse_args()
+    if a.combine: return combine()
     adj_path = WORK / "adjudications.jsonl"
     adjudications = {r["id"]: r for r in map(json.loads, open(adj_path))} if adj_path.exists() else {}
     train, tc = train_split()
@@ -109,7 +143,7 @@ def main():
     write_json(out / "manifest.json", {"version": "documents-v1", "partitions": ["train", "development", "test"], "locked": ["test"], "files": files,
                                        "source": build["repo"] + "@" + build["revision"], "rights": "US CFPB consumer complaint database, US government work (public domain)",
                                        "label_protocol": "PLAN_27b B2 revised: train = native label kept where both open-weight teachers agree; development/test = native label verified by a unanimous three-judge panel or adjudicated",
-                                       "teachers": TEACHERS, "judges": JUDGES, "label_report": report, "spot_check": "pending (runs/documents-v1-work/spot_check.jsonl, 50 test items)",
+                                       "teachers": TEACHERS, "judges": JUDGES, "adjudicators": "two independent Devin subagents per item (Claude family); decided only on agreement", "label_report": report, "spot_check": "pending (runs/documents-v1-work/spot_check.jsonl, 50 test items)",
                                        "trainable_sources": ["cfpb"], "candidates_build": build})
     print(f"frozen {out}; spot-check sample -> {WORK / 'spot_check.jsonl'}")
 
