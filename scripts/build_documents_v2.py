@@ -23,7 +23,7 @@ def main():
     a = ap.parse_args()
     out = Path(a.out)
     if out.exists(): raise FileExistsError(out)
-    v1 = [json.loads(l) for split in ("train", "development", "test") for l in open(V1 / f"{split}.jsonl")]
+    v1 = [json.loads(l) for split in ("train", "development", "test") for l in open(V1 / f"{split}.jsonl", encoding="utf-8")]
     seen, v1_ids = {r["_meta"]["text_sha256"] for r in v1}, {r["_meta"]["id"] for r in v1}
     cells, stats = defaultdict(list), Counter()
     for r in rows():

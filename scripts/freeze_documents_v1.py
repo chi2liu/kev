@@ -16,7 +16,7 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from kev.suite import PRIVATE_DATASET, SERVING_CONTEXT, read_manifest, write_json, write_jsonl  # noqa: E402
+from kev.suite import PRIVATE_DATASET, SERVING_CONTEXT, read_json, read_jsonl, read_manifest, write_json, write_jsonl  # noqa: E402
 
 WORK = Path("runs/documents-v1-work")
 TEACHERS = ("deepseek/deepseek-v3.2", "alibaba/qwen3-235b-a22b-thinking")
@@ -24,14 +24,14 @@ JUDGES = ("anthropic/claude-opus-4.5", "openai/gpt-5", "google/gemini-3-flash")
 
 
 def load(split):
-    return [json.loads(l) for l in open(WORK / "candidates" / f"{split}.jsonl")]
+    return read_jsonl(WORK / "candidates" / f"{split}.jsonl")
 
 
 def answers(split, models):
     out = {}
     for m in models:
         path = WORK / "labels" / split / (m.replace("/", "__") + ".jsonl")
-        out[m] = {r["id"]: r for r in map(json.loads, open(path))} if path.exists() else {}
+        out[m] = {r["id"]: r for r in read_jsonl(path)} if path.exists() else {}
     return out
 
 
@@ -84,7 +84,7 @@ def eval_split(split, adjudications):
 def read_verdicts(directory):
     out = {}
     for path in sorted(Path(directory).glob("shard-*.jsonl")):
-        for line in open(path):
+        for line in open(path, encoding="utf-8"):
             line = line.strip()
             if not line.startswith("{"): continue
             try: r = json.loads(line)
@@ -95,7 +95,7 @@ def read_verdicts(directory):
 
 def combine():
     """Agreement of two independent adjudications decides an item; any disagreement (or a missing verdict) drops it."""
-    queue = [json.loads(l)["id"] for l in open(WORK / "adjudication_queue.jsonl")]
+    queue = [r["id"] for r in read_jsonl(WORK / "adjudication_queue.jsonl")]
     a, b = read_verdicts(WORK / "adjudication" / "out"), read_verdicts(WORK / "adjudication" / "out2")
     rows, c = [], Counter()
     for item in queue:
@@ -141,7 +141,7 @@ def main():
     WORK = Path(a.work)
     if a.combine: return combine()
     adj_path = WORK / "adjudications.jsonl"
-    adjudications = {r["id"]: r for r in map(json.loads, open(adj_path))} if adj_path.exists() else {}
+    adjudications = {r["id"]: r for r in read_jsonl(adj_path)} if adj_path.exists() else {}
     train, tc = train_split()
     splits, report, queue = {"train": train}, {"train": tc}, []
     for split in ("development", "test"):
@@ -164,15 +164,15 @@ def main():
         files[f"{split}.jsonl"] = {"sha256": hashlib.sha256((out / f"{split}.jsonl").read_bytes()).hexdigest(), "records": len(recs), "questions": sum(len(r["questions"]) for r in recs),
                                    "by_length": dict(Counter(r["_meta"]["length_bucket"] for r in recs))}
     spot_check(splits["test"])
-    reviews = [json.loads(l) for l in open(WORK / "spot_check_reviews.jsonl")]
-    sample = {json.loads(l)["id"]: json.loads(l)["proposed_label"] for l in open(WORK / "spot_check.jsonl")}
+    reviews = read_jsonl(WORK / "spot_check_reviews.jsonl")
+    sample = {r["id"]: r["proposed_label"] for r in read_jsonl(WORK / "spot_check.jsonl")}
     if {r["id"] for r in reviews} != set(sample) or any(r["proposed_label"] != sample[r["id"]] for r in reviews): raise SystemExit("spot-check reviews do not match the sample")
     agreed = sum(r["verdict"] == "accept" for r in reviews)
     if agreed < 47: raise SystemExit(f"spot check {agreed}/50 is below the registered 47/50; not frozen")
     human = {"reviewer": "Jared Palmer", "tool": "tools/review", "sample": "50 test questions, seed documents-v1-spot-check", "agreement": f"{agreed}/50",
              "disagreements": [{"id": r["id"], "frozen": r["proposed_label"], "reviewer": r["label"], "verdict": r["verdict"]} for r in reviews if r["verdict"] != "accept"],
              "reviews_sha256": hashlib.sha256((WORK / "spot_check_reviews.jsonl").read_bytes()).hexdigest()}
-    build = json.load(open(WORK / "candidates" / "build.json"))
+    build = read_json(WORK / "candidates" / "build.json")
     mirror = {"mirror": {"dataset": PRIVATE_DATASET, "revision": upload_private(out, list(files))}} if a.private else {}
     write_json(out / "manifest.json", {"version": a.version, "partitions": list(splits), "locked": ["test"], "files": files, **mirror,
                                        "source": build["repo"] + "@" + build["revision"], "rights": "consumer narratives published by the US CFPB with consent; the CFPB considers them public domain for FOIA purposes" if a.private else "US CFPB consumer complaint database, US government work (public domain)",

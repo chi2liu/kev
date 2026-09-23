@@ -74,17 +74,17 @@ def main():
     work = Path(a.work)
     key = os.environ["AI_GATEWAY_API_KEY"]
     if "jev" in a.models.lower(): raise SystemExit("no Jev in any role")
-    recs = [json.loads(l) for l in open(work / "candidates" / f"{a.split}.jsonl")]
+    recs = [json.loads(l) for l in open(work / "candidates" / f"{a.split}.jsonl", encoding="utf-8")]
     if a.limit: recs = recs[:a.limit]
     ledger_path = work / "labels" / "spend.json"; ledger_path.parent.mkdir(parents=True, exist_ok=True)
-    ledger = json.load(open(ledger_path)) if ledger_path.exists() else {"total": 0.0, "by_model": {}}
+    ledger = json.loads(ledger_path.read_text(encoding="utf-8")) if ledger_path.exists() else {"total": 0.0, "by_model": {}}
     for model in a.models.split(","):
         out = work / "labels" / a.split / (model.replace("/", "__") + ".jsonl"); out.parent.mkdir(parents=True, exist_ok=True)
-        done = {json.loads(l)["id"] for l in open(out)} if out.exists() else set()
+        done = {json.loads(l)["id"] for l in open(out, encoding="utf-8")} if out.exists() else set()
         todo = [r for r in recs if r["_meta"]["id"] not in done]
         print(f"{model} on {a.split}: {len(done)} cached, {len(todo)} to label; spend so far ${ledger['total']:.2f} of ${a.cap:.2f}", flush=True)
         stop, n, bad = threading.Event(), 0, 0
-        with open(out, "a") as f, ThreadPoolExecutor(a.workers) as pool:
+        with open(out, "a", encoding="utf-8") as f, ThreadPoolExecutor(a.workers) as pool:
             futures = {pool.submit(lambda r=r: None if stop.is_set() else call(model, r, key)): r for r in todo}
             for fut in as_completed(futures):
                 res, rec = fut.result(), futures[fut]
@@ -94,11 +94,11 @@ def main():
                     f.write(json.dumps({"id": rec["_meta"]["id"], "model": model, **res}) + "\n"); f.flush()
                     n += 1; bad += res["answers"] is None
                     if n % 100 == 0:
-                        json.dump(ledger, open(ledger_path, "w"), indent=1)
+                        ledger_path.write_text(json.dumps(ledger, indent=1), encoding="utf-8")
                         print(f"  {n}/{len(todo)} (unparsed {bad}) ${ledger['total']:.2f}", flush=True)
                     if ledger["total"] >= a.cap and not stop.is_set():
                         stop.set(); print(f"  spend cap ${a.cap:.2f} reached; stopping", flush=True)
-        json.dump(ledger, open(ledger_path, "w"), indent=1)
+        ledger_path.write_text(json.dumps(ledger, indent=1), encoding="utf-8")
         print(f"  done: {n} labelled, {bad} unparsed; ledger ${ledger['total']:.2f}", flush=True)
         if stop.is_set(): break
 
