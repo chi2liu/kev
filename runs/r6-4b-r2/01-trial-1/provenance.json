@@ -1,7 +1,7 @@
 {
   "config": {
     "epochs": 1,
-    "seed": 1,
+    "seed": 2,
     "lr": 2e-05,
     "lora": 16,
     "accum": 4,
@@ -23,14 +23,14 @@
     "focal_gamma": 0.0,
     "dtype": "bf16",
     "checkpointing": 1,
-    "replay": 6000,
+    "replay": 2000,
     "max_state": 7552,
-    "base": "Qwen/Qwen3.5-9B-Base",
-    "base_revision": "68c46c4b3498877f3ef123c856ecfde50c39f404",
-    "init_from": "jaredpalmer/kev-9b",
-    "data": "evals/round5/combined-v1/soft.jsonl"
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "base_revision": "1001bb4d826a52d1f399e183466143f4da7b741b",
+    "init_from": "jaredpalmer/kev-4b",
+    "data": "evals/round6/soft-half/train.jsonl"
   },
-  "config_sha256": "f844fdb3014c3209730fe7fdc61cb313aecf4f25d04f3307223ff1f4931ff858",
+  "config_sha256": "a5e0fe1edd85d341f6ea44530d506cf558a0ceaf4243a633201e5c1b278ccb67",
   "suite_sha256": "a8f50e481b7d90b97da049e0ff6a01cee2f1ed204aed61a8265af0edbb5514d2",
   "source_hashes": {
     "kev/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -63,17 +63,17 @@
     "pyproject.toml": "7c17fbe9efcadda3eb488b59adf1b6db5938cd33af4d3bd389ce4359b73fcc7d",
     "uv.lock": "a9922dbb89acdef78299fd2b4a8c3f7f0fa1b2bc08b55595b6926fa785a9c466"
   },
-  "git_commit": "95c21daa6ae26f123e0e724e895ccea5e75cf49e",
+  "git_commit": "33f6c9add42d298137eaa800127c0c95313c400d",
   "platform": "Linux-4.19.0-gvisor-x86_64-with-glibc2.36",
   "torch": "2.8.0+cu128",
   "device": "cuda",
   "gpu": "NVIDIA H200",
   "legacy_checkpoint": false,
   "measured_checkpoint": {
-    "requested": "/runs/r6-9b/05-trial-5/checkpoint",
-    "resolved": "/runs/r6-9b/05-trial-5/checkpoint",
-    "head_sha256": "bae17108b7aa78d383c3f287d50990f682a622aa7747faff832718a072daa185",
-    "adapter_sha256": "3ffaef14cf67ccf7123829b8146bf35c6c531d3225d5c376555817f122f388c9",
+    "requested": "/runs/r6-4b-r2/01-trial-1/checkpoint",
+    "resolved": "/runs/r6-4b-r2/01-trial-1/checkpoint",
+    "head_sha256": "27c991aeb73d0719c8de1a43043726d243e1e27cda39ea1f0bfff799ede4e772",
+    "adapter_sha256": "efe52d688ff86a8d8165e04b0d82ff9f1d0beaffce8f73d9c2b480d4038ff638",
     "inference_temperature": 1.0
   }
 }

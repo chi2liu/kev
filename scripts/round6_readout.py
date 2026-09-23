@@ -3,7 +3,7 @@ saved rows, with the ranking that picks the confirmation candidate. Selection se
 
     uv run python scripts/round6_readout.py --size 9b --out runs/r6-readout
 
-Arms: the trials under runs/r6-<size>/<NN-trial-N> (labelled from their config) plus round 5's incumbent (C9 / C4 / C08).
+Arms: the trials under runs/r6-<size>/ and runs/r6-<size>-r2/ (labelled from their config) plus round 5's incumbent (C9 / C4 / C08).
 Rows: short = each trial's own transfer/rows.json (transfer-v4 development, written inside the trial) against the parent's;
 long = runs/r6-<size>-<arm>-long (longstate-v2 development) against runs/r5r-P<size>-long; externals = runs/r6-<size>-<arm>-<suite>
 for semif / scienthoon / wanli2 / typesafe and v9 against the parent's reads (runs/r5r-P<size>-<suite>, runs/r6-P<size>-wanli2).
@@ -98,7 +98,7 @@ def main():
     arms = []
     itag, itrial, iprefix = INCUMBENTS[a.size]
     arms.append(arm_report(itag, itrial, iprefix, parent))
-    for d in sorted(Path(f"runs/r6-{a.size}").glob("*-trial-*")):
+    for d in sorted(Path("runs").glob(f"r6-{a.size}/*-trial-*")) + sorted(Path("runs").glob(f"r6-{a.size}-r2/*-trial-*")):   # rounds 1 and 2
         if not (d / "transfer/rows.json").exists(): continue
         cfg = read_json(d / "provenance.json")["config"]
         arms.append(arm_report(label(cfg), str(d), f"r6-{a.size}-{label(cfg)}", parent))

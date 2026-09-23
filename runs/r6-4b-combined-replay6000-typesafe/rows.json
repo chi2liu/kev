@@ -1,0 +1,2829 @@
+[
+  {
+    "id": "typesafe/188ccf71d8f2f9880393a022",
+    "group": "typesafe/114587d9fc945d29aea8",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "work_or_goods",
+      "tax",
+      "charge_on_top",
+      "credit_or_discount",
+      "expense_or_retainage"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/188ccf71d8f2f9880393a022",
+    "p": [
+      0.9889761347430412,
+      0.004500390093215158,
+      0.0058336705783087126,
+      0.00010736871049321649,
+      0.0005824358749416538
+    ],
+    "raw_probability_sum": 0.9999999860519893,
+    "zero_count": 0,
+    "logits": [
+      0.7051257491111755,
+      -4.687380313873291,
+      -4.427897930145264,
+      -8.423030853271484,
+      -6.732080459594727
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/4dbbe3efc20585950b06baf8",
+    "group": "typesafe/114587d9fc945d29aea8",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/4dbbe3efc20585950b06baf8",
+    "p": [
+      0.4713789224624634,
+      0.5286210775375366
+    ],
+    "raw_probability_sum": 1.0,
+    "zero_count": 0,
+    "logits": [
+      -1.2856647968292236,
+      -1.1710550785064697
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/52b55b49ba54a27614b3f73d",
+    "group": "typesafe/114587d9fc945d29aea8",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/52b55b49ba54a27614b3f73d",
+    "p": [
+      0.8852694696580579,
+      0.11473053034194208
+    ],
+    "raw_probability_sum": 0.9999999925494194,
+    "zero_count": 0,
+    "logits": [
+      -0.7552275061607361,
+      -2.7985334396362305
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/daf967dda34c67970d2257e7",
+    "group": "typesafe/114587d9fc945d29aea8",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/daf967dda34c67970d2257e7",
+    "p": [
+      0.9189817220731287,
+      0.08101827792687133
+    ],
+    "raw_probability_sum": 1.000000074505806,
+    "zero_count": 0,
+    "logits": [
+      -2.716876745223999,
+      -5.145468235015869
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/f4ca8bfc4ba3c01142b0a309",
+    "group": "typesafe/114587d9fc945d29aea8",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "work_or_goods",
+      "tax",
+      "charge_on_top",
+      "credit_or_discount",
+      "expense_or_retainage"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/f4ca8bfc4ba3c01142b0a309",
+    "p": [
+      0.997006148032438,
+      0.0014688481316320284,
+      0.0013151816484673296,
+      2.3820721963719838e-05,
+      0.00018600146549884816
+    ],
+    "raw_probability_sum": 0.9999999701758497,
+    "zero_count": 0,
+    "logits": [
+      1.4847869873046875,
+      -5.035491466522217,
+      -5.145995140075684,
+      -9.157169342041016,
+      -7.10197114944458
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/fa651dcab96ebf53f902cb12",
+    "group": "typesafe/114587d9fc945d29aea8",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "same_obligation",
+      "earlier_period_or_phase",
+      "unrelated",
+      "unsure"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/fa651dcab96ebf53f902cb12",
+    "p": [
+      0.041572812286449774,
+      0.9078135942734489,
+      0.0114807531282559,
+      0.039132840311845496
+    ],
+    "raw_probability_sum": 1.0000000158324838,
+    "zero_count": 0,
+    "logits": [
+      -3.302711009979248,
+      -0.21911826729774475,
+      -4.589485168457031,
+      -3.3631954193115234
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/61389f3aa7022bace3a60237",
+    "group": "typesafe/1543b5ed65f75bd798bc",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/61389f3aa7022bace3a60237",
+    "p": [
+      0.004489169055206813,
+      0.9955108309447932
+    ],
+    "raw_probability_sum": 0.9999999855645001,
+    "zero_count": 0,
+    "logits": [
+      -3.531113624572754,
+      1.8704745769500732
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/a67b5f95466c108b3e2c4ac6",
+    "group": "typesafe/1543b5ed65f75bd798bc",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/a67b5f95466c108b3e2c4ac6",
+    "p": [
+      0.0701581558632301,
+      0.9298418441367698
+    ],
+    "raw_probability_sum": 0.9999999701976776,
+    "zero_count": 0,
+    "logits": [
+      -2.5655465126037598,
+      0.01871579885482788
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/b645dd9128f8015d8e0aec45",
+    "group": "typesafe/1543b5ed65f75bd798bc",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/b645dd9128f8015d8e0aec45",
+    "p": [
+      0.006116340342702741,
+      0.9938836596572973
+    ],
+    "raw_probability_sum": 1.000000009778887,
+    "zero_count": 0,
+    "logits": [
+      -3.4178152084350586,
+      1.6728413105010986
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/ca001f1e85645614ea45b218",
+    "group": "typesafe/1543b5ed65f75bd798bc",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/ca001f1e85645614ea45b218",
+    "p": [
+      0.13033917934713302,
+      0.869660820652867
+    ],
+    "raw_probability_sum": 0.9999999701976776,
+    "zero_count": 0,
+    "logits": [
+      -1.5534213781356812,
+      0.3445417284965515
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/3dab936f0fdc837f5be9e310",
+    "group": "typesafe/1543b5ed65f75bd798bc",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/3dab936f0fdc837f5be9e310",
+    "p": [
+      0.0664242049094408,
+      0.9335757950905592
+    ],
+    "raw_probability_sum": 1.0000000149011612,
+    "zero_count": 0,
+    "logits": [
+      -2.6291117668151855,
+      0.013848870992660522
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/9a1b9d2bd5a1e7f9631a4401",
+    "group": "typesafe/1c34b6bbb02caaf5c43d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/9a1b9d2bd5a1e7f9631a4401",
+    "p": [
+      0.955592127890621,
+      0.044407872109379055
+    ],
+    "raw_probability_sum": 0.9999999664723873,
+    "zero_count": 0,
+    "logits": [
+      -1.952473759651184,
+      -5.021388053894043
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/d5943297a4a36b3aefe79e7b",
+    "group": "typesafe/1c34b6bbb02caaf5c43d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "money_back",
+      "replacement_or_fix",
+      "explanation_only",
+      "speak_to_human",
+      "not_stated"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/d5943297a4a36b3aefe79e7b",
+    "p": [
+      0.4761830387318318,
+      0.0007175512455542942,
+      0.012305868321812479,
+      0.02307897159651804,
+      0.4877145701042834
+    ],
+    "raw_probability_sum": 1.0000000380096026,
+    "zero_count": 0,
+    "logits": [
+      -1.4545530080795288,
+      -7.952266216278076,
+      -5.110279083251953,
+      -4.481433391571045,
+      -1.4306249618530273
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/df7820f5c74b7285195b8c0d",
+    "group": "typesafe/1c34b6bbb02caaf5c43d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "unauthorized_charge",
+      "card_declined",
+      "refund_request",
+      "billing_dispute",
+      "account_access",
+      "cancel_account",
+      "delivery_issue",
+      "general_question"
+    ],
+    "label": 5,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/df7820f5c74b7285195b8c0d",
+    "p": [
+      0.0038246567427827863,
+      1.696245882501923e-05,
+      0.0869865674288983,
+      0.14438857690754167,
+      4.888107474190804e-05,
+      0.7540744235624987,
+      0.00016632509414099328,
+      0.010493606730570692
+    ],
+    "raw_probability_sum": 0.999999961728463,
+    "zero_count": 0,
+    "logits": [
+      -6.259547233581543,
+      -11.67776870727539,
+      -3.1352620124816895,
+      -2.628507614135742,
+      -10.619380950927734,
+      -0.9755246639251709,
+      -9.394826889038086,
+      -5.250249862670898
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/d56bf53331807c793a6d4fc9",
+    "group": "typesafe/1c34b6bbb02caaf5c43d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "damaged_or_faulty",
+      "never_arrived",
+      "wrong_item",
+      "duplicate_or_erroneous_charge",
+      "changed_mind",
+      "no_reason_given"
+    ],
+    "label": 3,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/d56bf53331807c793a6d4fc9",
+    "p": [
+      0.0010166646239157127,
+      0.0010705368656625108,
+      0.00014726093970393405,
+      0.8207554805193548,
+      0.0404896764957014,
+      0.1365203805556617
+    ],
+    "raw_probability_sum": 0.9999999288411345,
+    "zero_count": 0,
+    "logits": [
+      -8.661163330078125,
+      -8.609530448913574,
+      -10.593239784240723,
+      -1.9674655199050903,
+      -4.9766435623168945,
+      -3.761216878890991
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/0aae4acb7f892ab763ceca81",
+    "group": "typesafe/1c34b6bbb02caaf5c43d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/0aae4acb7f892ab763ceca81",
+    "p": [
+      0.11160430641456297,
+      0.888395693585437
+    ],
+    "raw_probability_sum": 1.000000037252903,
+    "zero_count": 0,
+    "logits": [
+      -3.403210163116455,
+      -1.3287525177001953
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/b5d4813fff7303532a2ca64a",
+    "group": "typesafe/21614d54b211e20e519d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/b5d4813fff7303532a2ca64a",
+    "p": [
+      0.9487841690004462,
+      0.05121583099955383
+    ],
+    "raw_probability_sum": 1.0000000037252903,
+    "zero_count": 0,
+    "logits": [
+      -0.20463693141937256,
+      -3.123769760131836
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/b63e61b08fd0f8388a5e8257",
+    "group": "typesafe/21614d54b211e20e519d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/b63e61b08fd0f8388a5e8257",
+    "p": [
+      0.5471646352757404,
+      0.4528353647242595
+    ],
+    "raw_probability_sum": 0.9999999701976776,
+    "zero_count": 0,
+    "logits": [
+      -2.420426607131958,
+      -2.609647750854492
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/ca5e8294d4ee5adb8398afb7",
+    "group": "typesafe/21614d54b211e20e519d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/ca5e8294d4ee5adb8398afb7",
+    "p": [
+      0.3467045827717955,
+      0.6532954172282045
+    ],
+    "raw_probability_sum": 0.9999999701976776,
+    "zero_count": 0,
+    "logits": [
+      -2.3727340698242188,
+      -1.7391777038574219
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/5bdda592590482092b0bd882",
+    "group": "typesafe/21614d54b211e20e519d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/5bdda592590482092b0bd882",
+    "p": [
+      0.008352247339048104,
+      0.9916477526609518
+    ],
+    "raw_probability_sum": 0.9999999674037099,
+    "zero_count": 0,
+    "logits": [
+      -2.6690337657928467,
+      2.1078038215637207
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/ce015e8b4f0fae0c8342f231",
+    "group": "typesafe/21614d54b211e20e519d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/ce015e8b4f0fae0c8342f231",
+    "p": [
+      0.035960099787411846,
+      0.9640399002125881
+    ],
+    "raw_probability_sum": 1.0000000223517418,
+    "zero_count": 0,
+    "logits": [
+      -3.8473074436187744,
+      -0.5585846304893494
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/e59de940faa447fdc05e6c7e",
+    "group": "typesafe/21614d54b211e20e519d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/e59de940faa447fdc05e6c7e",
+    "p": [
+      0.9599012911301347,
+      0.04009870886986533
+    ],
+    "raw_probability_sum": 0.9999999813735485,
+    "zero_count": 0,
+    "logits": [
+      -2.1411917209625244,
+      -5.316678047180176
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/21c4abbb5e7cb6b4f12d3474",
+    "group": "typesafe/6303f464df5e966f93e0",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/21c4abbb5e7cb6b4f12d3474",
+    "p": [
+      0.8327280879020691,
+      0.1672719120979309
+    ],
+    "raw_probability_sum": 1.0,
+    "zero_count": 0,
+    "logits": [
+      -1.9594701528549194,
+      -3.56455659866333
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/430237cbe26e9af40888598a",
+    "group": "typesafe/6303f464df5e966f93e0",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/430237cbe26e9af40888598a",
+    "p": [
+      0.813755214214325,
+      0.18624478578567505
+    ],
+    "raw_probability_sum": 1.0,
+    "zero_count": 0,
+    "logits": [
+      -1.9228659868240356,
+      -3.397463798522949
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/3a5f273468b2614da64aafd5",
+    "group": "typesafe/6b9f49ee0ea9e16fbbff",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "tool_or_service",
+      "infrastructure",
+      "agent_misuse",
+      "agent_reasoning",
+      "nothing_wrong"
+    ],
+    "label": 3,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/3a5f273468b2614da64aafd5",
+    "p": [
+      0.03675557854403338,
+      0.007179721612972436,
+      0.03698919523547156,
+      0.4655160537663389,
+      0.45355945084118365
+    ],
+    "raw_probability_sum": 0.9999999506399035,
+    "zero_count": 0,
+    "logits": [
+      -4.314682483673096,
+      -5.947711944580078,
+      -4.308346748352051,
+      -1.7758259773254395,
+      -1.8018461465835571
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/5a981918c727f975ba880bdd",
+    "group": "typesafe/6b9f49ee0ea9e16fbbff",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "step 1: GateRing.list_active_grants",
+      "none"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/5a981918c727f975ba880bdd",
+    "p": [
+      0.11702125606701713,
+      0.8829787439329828
+    ],
+    "raw_probability_sum": 0.9999999925494194,
+    "zero_count": 0,
+    "logits": [
+      -4.970344543457031,
+      -2.949398994445801
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/49b7d88aae658efbcdfab62c",
+    "group": "typesafe/6b9f49ee0ea9e16fbbff",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/49b7d88aae658efbcdfab62c",
+    "p": [
+      0.020842968175234306,
+      0.9791570318247657
+    ],
+    "raw_probability_sum": 1.0000000596046448,
+    "zero_count": 0,
+    "logits": [
+      -3.488320827484131,
+      0.3613545894622803
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/889259ddc01dfb8cdfc6e3b9",
+    "group": "typesafe/6b9f49ee0ea9e16fbbff",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/889259ddc01dfb8cdfc6e3b9",
+    "p": [
+      0.10796313169790862,
+      0.8920368683020914
+    ],
+    "raw_probability_sum": 1.0000000521540642,
+    "zero_count": 0,
+    "logits": [
+      -2.577932357788086,
+      -0.46621471643447876
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/8f68505fad7f8bd70e6e43c5",
+    "group": "typesafe/6b9f49ee0ea9e16fbbff",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/8f68505fad7f8bd70e6e43c5",
+    "p": [
+      0.9233146585021811,
+      0.07668534149781887
+    ],
+    "raw_probability_sum": 0.9999999701976776,
+    "zero_count": 0,
+    "logits": [
+      -0.9961585402488708,
+      -3.4844181537628174
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/1ccf0a46a6d80e7b8076a83b",
+    "group": "typesafe/6e25524ef7c152fdfe66",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/1ccf0a46a6d80e7b8076a83b",
+    "p": [
+      0.9389347294131707,
+      0.061065270586829326
+    ],
+    "raw_probability_sum": 1.0000000149011612,
+    "zero_count": 0,
+    "logits": [
+      -2.286102056503296,
+      -5.018904685974121
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/39cd3b8ddd4abf17cff8bec3",
+    "group": "typesafe/6e25524ef7c152fdfe66",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/39cd3b8ddd4abf17cff8bec3",
+    "p": [
+      0.23246623471178024,
+      0.7675337652882198
+    ],
+    "raw_probability_sum": 0.9999999403953552,
+    "zero_count": 0,
+    "logits": [
+      -2.896632671356201,
+      -1.702195167541504
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/4cd12c18602cee6acf9d714d",
+    "group": "typesafe/6e25524ef7c152fdfe66",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/4cd12c18602cee6acf9d714d",
+    "p": [
+      0.9073834542059587,
+      0.0926165457940413
+    ],
+    "raw_probability_sum": 1.0000000521540642,
+    "zero_count": 0,
+    "logits": [
+      -0.21137432754039764,
+      -2.493471622467041
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/668df55ab31dd9fe9ebdaa84",
+    "group": "typesafe/6e25524ef7c152fdfe66",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/668df55ab31dd9fe9ebdaa84",
+    "p": [
+      0.0251160914537529,
+      0.9748839085462471
+    ],
+    "raw_probability_sum": 1.0000000055879354,
+    "zero_count": 0,
+    "logits": [
+      -2.755176305770874,
+      0.9036334753036499
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/0bcfbba5435af97f4c7f7ded",
+    "group": "typesafe/6e25524ef7c152fdfe66",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "tool_or_service",
+      "infrastructure",
+      "agent_misuse",
+      "agent_reasoning",
+      "nothing_wrong"
+    ],
+    "label": 3,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/0bcfbba5435af97f4c7f7ded",
+    "p": [
+      0.0454664853483479,
+      0.011088352402559986,
+      0.039677984125659226,
+      0.1859237212108734,
+      0.7178434569125595
+    ],
+    "raw_probability_sum": 1.0000000223517418,
+    "zero_count": 0,
+    "logits": [
+      -4.797639846801758,
+      -6.2087202072143555,
+      -4.933818817138672,
+      -3.3892788887023926,
+      -2.0383639335632324
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/303c3e4e2a6ca1c851d1a11c",
+    "group": "typesafe/6e25524ef7c152fdfe66",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "step 1: ShiftLoom.run_standard_diagnostics",
+      "none"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/303c3e4e2a6ca1c851d1a11c",
+    "p": [
+      0.06290566223044441,
+      0.9370943377695555
+    ],
+    "raw_probability_sum": 0.9999999925494194,
+    "zero_count": 0,
+    "logits": [
+      -5.195085048675537,
+      -2.4939372539520264
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/037299f9b35b129455ae2855",
+    "group": "typesafe/7506a53b76e474564f54",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/037299f9b35b129455ae2855",
+    "p": [
+      0.9448346251560236,
+      0.055165374843976454
+    ],
+    "raw_probability_sum": 0.999999962747097,
+    "zero_count": 0,
+    "logits": [
+      -2.0831375122070312,
+      -4.923811912536621
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/62004085c751753bc8d62d67",
+    "group": "typesafe/7506a53b76e474564f54",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/62004085c751753bc8d62d67",
+    "p": [
+      0.9951878864868516,
+      0.004812113513148357
+    ],
+    "raw_probability_sum": 0.9999999920837581,
+    "zero_count": 0,
+    "logits": [
+      -0.5306795835494995,
+      -5.8624749183654785
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/acae0a13f9c7e72851015c11",
+    "group": "typesafe/7506a53b76e474564f54",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "money_back",
+      "replacement_or_fix",
+      "explanation_only",
+      "speak_to_human",
+      "not_stated"
+    ],
+    "label": 4,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/acae0a13f9c7e72851015c11",
+    "p": [
+      0.041132643071853985,
+      0.007902092156847196,
+      0.007757455435329693,
+      0.032495583748757946,
+      0.9107122255872112
+    ],
+    "raw_probability_sum": 1.0000000181607902,
+    "zero_count": 0,
+    "logits": [
+      -3.781327247619629,
+      -5.431001663208008,
+      -5.449474811553955,
+      -4.017024993896484,
+      -0.6839023232460022
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/f892cb9fd5fc7590f4b6525b",
+    "group": "typesafe/7506a53b76e474564f54",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "unauthorized_charge",
+      "card_declined",
+      "refund_request",
+      "billing_dispute",
+      "account_access",
+      "cancel_account",
+      "delivery_issue",
+      "general_question"
+    ],
+    "label": 5,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/f892cb9fd5fc7590f4b6525b",
+    "p": [
+      3.0602451984905687e-06,
+      1.1125393706618557e-05,
+      0.000836674397531851,
+      1.7536252559242694e-05,
+      8.72110813300773e-05,
+      0.998646894060479,
+      1.9234986718781676e-05,
+      0.0003782635824758824
+    ],
+    "raw_probability_sum": 1.000000020926791,
+    "zero_count": 0,
+    "logits": [
+      -10.297937393188477,
+      -9.0072021484375,
+      -4.686996936798096,
+      -8.552162170410156,
+      -6.9481000900268555,
+      2.3977246284484863,
+      -8.459700584411621,
+      -5.480840682983398
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/1c3247fbed2ed8ec6e7a037e",
+    "group": "typesafe/7b4876df4111f4ee9a3b",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "same",
+      "more",
+      "less",
+      "not_asking_for_money"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/1c3247fbed2ed8ec6e7a037e",
+    "p": [
+      0.9960051170235921,
+      0.0007820883758988159,
+      0.002468703778167805,
+      0.0007440908223413069
+    ],
+    "raw_probability_sum": 1.000000000873115,
+    "zero_count": 0,
+    "logits": [
+      1.254854440689087,
+      -5.894685745239258,
+      -4.745204448699951,
+      -5.9444899559021
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/00403710479b3c6d6f5cc12e",
+    "group": "typesafe/7b4876df4111f4ee9a3b",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/00403710479b3c6d6f5cc12e",
+    "p": [
+      0.5975472749010541,
+      0.4024527250989459
+    ],
+    "raw_probability_sum": 1.0000000298023224,
+    "zero_count": 0,
+    "logits": [
+      -2.4072139263153076,
+      -2.8024697303771973
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/273b0676d23c86d276651914",
+    "group": "typesafe/7b4876df4111f4ee9a3b",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/273b0676d23c86d276651914",
+    "p": [
+      0.7948659536162587,
+      0.20513404638374128
+    ],
+    "raw_probability_sum": 0.9999999403953552,
+    "zero_count": 0,
+    "logits": [
+      -4.068910121917725,
+      -5.423419952392578
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/371be0b5bafdcd596293a496",
+    "group": "typesafe/7b4876df4111f4ee9a3b",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "money_back",
+      "replacement_or_fix",
+      "explanation_only",
+      "speak_to_human",
+      "not_stated"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/371be0b5bafdcd596293a496",
+    "p": [
+      0.9477562554108471,
+      0.0019254533654452439,
+      0.0013339559102673502,
+      0.0012808339643846632,
+      0.04770350134905562
+    ],
+    "raw_probability_sum": 0.9999999111751094,
+    "zero_count": 0,
+    "logits": [
+      0.16374675929546356,
+      -6.035189151763916,
+      -6.4022016525268555,
+      -6.4428391456604,
+      -2.825345754623413
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/6b6f1cdebb551365aeea7b30",
+    "group": "typesafe/7b4876df4111f4ee9a3b",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "unauthorized_charge",
+      "card_declined",
+      "refund_request",
+      "billing_dispute",
+      "account_access",
+      "cancel_account",
+      "delivery_issue",
+      "general_question"
+    ],
+    "label": 2,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/6b6f1cdebb551365aeea7b30",
+    "p": [
+      3.962947952697105e-05,
+      0.0002360038791863512,
+      0.9844076078278419,
+      0.0014115510643670224,
+      1.0141823050722172e-05,
+      2.9127017290977878e-05,
+      0.00048409248300405053,
+      0.013381846425732043
+    ],
+    "raw_probability_sum": 1.000000056396857,
+    "zero_count": 0,
+    "logits": [
+      -10.245792388916016,
+      -8.461517333984375,
+      -0.1255699098110199,
+      -6.6729207038879395,
+      -11.608697891235352,
+      -10.553699493408203,
+      -7.743089199066162,
+      -4.423710823059082
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/42a77bfee1a2fa1e4209799f",
+    "group": "typesafe/80706b31b4fd6026875d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/42a77bfee1a2fa1e4209799f",
+    "p": [
+      0.8850862183460393,
+      0.11491378165396073
+    ],
+    "raw_probability_sum": 0.9999999552965164,
+    "zero_count": 0,
+    "logits": [
+      -2.380478858947754,
+      -4.4219818115234375
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/4ea36f7ae0206b832f61e24e",
+    "group": "typesafe/80706b31b4fd6026875d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/4ea36f7ae0206b832f61e24e",
+    "p": [
+      0.011578633518618828,
+      0.9884213664813811
+    ],
+    "raw_probability_sum": 1.000000074505806,
+    "zero_count": 0,
+    "logits": [
+      -3.490734100341797,
+      0.9562135934829712
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/6ef39b3605a45ce8e8061979",
+    "group": "typesafe/80706b31b4fd6026875d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/6ef39b3605a45ce8e8061979",
+    "p": [
+      0.32800338697413284,
+      0.6719966130258672
+    ],
+    "raw_probability_sum": 1.0000000596046448,
+    "zero_count": 0,
+    "logits": [
+      -2.179717779159546,
+      -1.4624884128570557
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/3f3efcf803f31c601e8c1ae0",
+    "group": "typesafe/80706b31b4fd6026875d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/3f3efcf803f31c601e8c1ae0",
+    "p": [
+      0.9319993188083222,
+      0.06800068119167774
+    ],
+    "raw_probability_sum": 1.0000000074505806,
+    "zero_count": 0,
+    "logits": [
+      -1.6834056377410889,
+      -4.301219940185547
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/1e3686a263ad982b9640ef89",
+    "group": "typesafe/80706b31b4fd6026875d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "step 1: RidgeChart Demographics Hub.update_contact_methods",
+      "step 2: RidgeChart Demographics Hub.update_contact_methods",
+      "none"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/1e3686a263ad982b9640ef89",
+    "p": [
+      0.8744280409062201,
+      0.11980382378460222,
+      0.005768135309177705
+    ],
+    "raw_probability_sum": 1.000000060070306,
+    "zero_count": 0,
+    "logits": [
+      1.9298412799835205,
+      -0.05787299573421478,
+      -3.0913796424865723
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/f7fab0a3445485f2163f7956",
+    "group": "typesafe/80706b31b4fd6026875d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_agent_trace_observability",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "tool_or_service",
+      "infrastructure",
+      "agent_misuse",
+      "agent_reasoning",
+      "nothing_wrong"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/f7fab0a3445485f2163f7956",
+    "p": [
+      0.8709691219753863,
+      0.013800176888717479,
+      0.009994613751367759,
+      0.058286887279666015,
+      0.04694920010486246
+    ],
+    "raw_probability_sum": 0.999999925494194,
+    "zero_count": 0,
+    "logits": [
+      -0.6944370865821838,
+      -4.839362144470215,
+      -5.161997318267822,
+      -3.3986663818359375,
+      -3.6149773597717285
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/00e97a0168655e7e166a9f09",
+    "group": "typesafe/93f00c41957722e0f56b",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/00e97a0168655e7e166a9f09",
+    "p": [
+      0.6688970526724175,
+      0.33110294732758244
+    ],
+    "raw_probability_sum": 0.9999999701976776,
+    "zero_count": 0,
+    "logits": [
+      -2.3660879135131836,
+      -3.069288730621338
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/326d35b43efa7599ae518c64",
+    "group": "typesafe/93f00c41957722e0f56b",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/326d35b43efa7599ae518c64",
+    "p": [
+      0.7835631124777993,
+      0.2164368875222007
+    ],
+    "raw_probability_sum": 0.9999999552965164,
+    "zero_count": 0,
+    "logits": [
+      -1.9097697734832764,
+      -3.196322441101074
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/e50c4258562e255b2416d0aa",
+    "group": "typesafe/9ff2702291d3a3a2daf4",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "accepts",
+      "declines",
+      "unclear_or_conditional"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/e50c4258562e255b2416d0aa",
+    "p": [
+      0.9985855912684404,
+      0.00017496028324602325,
+      0.0012394484483136306
+    ],
+    "raw_probability_sum": 0.9999999904975994,
+    "zero_count": 0,
+    "logits": [
+      2.578253746032715,
+      -6.071282863616943,
+      -4.113419532775879
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/3eceb6942f244b8f55e4bd66",
+    "group": "typesafe/9ff2702291d3a3a2daf4",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/3eceb6942f244b8f55e4bd66",
+    "p": [
+      0.8308618293317335,
+      0.16913817066826653
+    ],
+    "raw_probability_sum": 1.0000000447034836,
+    "zero_count": 0,
+    "logits": [
+      -3.0356104373931885,
+      -4.6273579597473145
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/7539d579352834abe78c34d1",
+    "group": "typesafe/9ff2702291d3a3a2daf4",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/7539d579352834abe78c34d1",
+    "p": [
+      0.9917275767066389,
+      0.008272423293361114
+    ],
+    "raw_probability_sum": 1.0000000139698386,
+    "zero_count": 0,
+    "logits": [
+      -0.44931402802467346,
+      -5.235835075378418
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/ad42472599548ecc8ad2ab43",
+    "group": "typesafe/9ff2702291d3a3a2daf4",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "money_back",
+      "replacement_or_fix",
+      "explanation_only",
+      "speak_to_human",
+      "not_stated"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/ad42472599548ecc8ad2ab43",
+    "p": [
+      0.11202528645752076,
+      0.00013372094342615397,
+      0.002743359500197321,
+      0.7238685694212847,
+      0.161229063677571
+    ],
+    "raw_probability_sum": 0.9999999716092134,
+    "zero_count": 0,
+    "logits": [
+      -2.424116611480713,
+      -9.154841423034668,
+      -6.133657932281494,
+      -0.5582312941551208,
+      -2.0600152015686035
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/89cbc1b1899fc005e271befb",
+    "group": "typesafe/9ff2702291d3a3a2daf4",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "same",
+      "more",
+      "less",
+      "not_asking_for_money"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/89cbc1b1899fc005e271befb",
+    "p": [
+      0.9404234977514445,
+      0.0010824516067502333,
+      0.018943539735282327,
+      0.039550510906522916
+    ],
+    "raw_probability_sum": 1.0000000536674634,
+    "zero_count": 0,
+    "logits": [
+      -0.0546756386756897,
+      -6.82177734375,
+      -3.959542989730835,
+      -3.2234272956848145
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/19739e963c01114d0e80a9d9",
+    "group": "typesafe/a48e9b6a50034857c6e6",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/19739e963c01114d0e80a9d9",
+    "p": [
+      0.875524952048997,
+      0.12447504795100289
+    ],
+    "raw_probability_sum": 1.0000000521540642,
+    "zero_count": 0,
+    "logits": [
+      -1.157092571258545,
+      -3.1078109741210938
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/5afb13535f84a1f9cc3b9c8f",
+    "group": "typesafe/a48e9b6a50034857c6e6",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "work_or_goods",
+      "tax",
+      "charge_on_top",
+      "credit_or_discount",
+      "expense_or_retainage"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/5afb13535f84a1f9cc3b9c8f",
+    "p": [
+      0.9942865213048667,
+      0.003363954749791231,
+      0.0019073020341715027,
+      2.5227012174746164e-05,
+      0.00041699489899584414
+    ],
+    "raw_probability_sum": 0.9999999560095603,
+    "zero_count": 0,
+    "logits": [
+      1.3516850471496582,
+      -4.337223052978516,
+      -4.904650688171387,
+      -9.230180740356445,
+      -6.425021648406982
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/9cecd05ebb8a5cc25e423239",
+    "group": "typesafe/a48e9b6a50034857c6e6",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "confirmed",
+      "less",
+      "not_done",
+      "vendor_only",
+      "none",
+      "unsure"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/9cecd05ebb8a5cc25e423239",
+    "p": [
+      0.2306327109133111,
+      0.08545600750231754,
+      0.08923069520638428,
+      0.16597832986680164,
+      0.24069667221153784,
+      0.1880055842996476
+    ],
+    "raw_probability_sum": 0.9999999850988388,
+    "zero_count": 0,
+    "logits": [
+      -3.21356463432312,
+      -4.206389427185059,
+      -4.163166046142578,
+      -3.5425338745117188,
+      -3.170853614807129,
+      -3.417919397354126
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/a857bb8be892c90d21ee3d85",
+    "group": "typesafe/a48e9b6a50034857c6e6",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/a857bb8be892c90d21ee3d85",
+    "p": [
+      0.9604873788120749,
+      0.039512621187925055
+    ],
+    "raw_probability_sum": 1.0000000484287739,
+    "zero_count": 0,
+    "logits": [
+      -0.31350958347320557,
+      -3.5043301582336426
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/e69807128466dbc56a7bda22",
+    "group": "typesafe/a48e9b6a50034857c6e6",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/e69807128466dbc56a7bda22",
+    "p": [
+      0.8090324877346682,
+      0.19096751226533187
+    ],
+    "raw_probability_sum": 1.0000000149011612,
+    "zero_count": 0,
+    "logits": [
+      -2.702838182449341,
+      -4.146574020385742
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/1b263ba36e0457395f18969a",
+    "group": "typesafe/aa7d13208209c35c44fa",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/1b263ba36e0457395f18969a",
+    "p": [
+      0.9755019185720476,
+      0.024498081427952383
+    ],
+    "raw_probability_sum": 0.9999999757856131,
+    "zero_count": 0,
+    "logits": [
+      -1.0590612888336182,
+      -4.7434186935424805
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/4837f53607a521c78ff9b14b",
+    "group": "typesafe/aa7d13208209c35c44fa",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "same_obligation",
+      "earlier_period_or_phase",
+      "unrelated",
+      "unsure"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/4837f53607a521c78ff9b14b",
+    "p": [
+      0.013703601288058408,
+      0.944217075725555,
+      0.0077251618831983195,
+      0.034354161103188195
+    ],
+    "raw_probability_sum": 1.0000000107102096,
+    "zero_count": 0,
+    "logits": [
+      -3.7954323291778564,
+      0.4372650980949402,
+      -4.368608474731445,
+      -2.8763678073883057
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/504fa3e9331aafba487b76c0",
+    "group": "typesafe/aa7d13208209c35c44fa",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "same_obligation",
+      "earlier_period_or_phase",
+      "unrelated",
+      "unsure"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/504fa3e9331aafba487b76c0",
+    "p": [
+      0.01429724884888995,
+      0.9532372390971975,
+      0.00854478779638107,
+      0.02392072425753148
+    ],
+    "raw_probability_sum": 0.9999999962747097,
+    "zero_count": 0,
+    "logits": [
+      -3.5277318954467773,
+      0.6720649003982544,
+      -4.042477607727051,
+      -3.0130536556243896
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/68f13ec40c5a86c911c29e1f",
+    "group": "typesafe/aa7d13208209c35c44fa",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/68f13ec40c5a86c911c29e1f",
+    "p": [
+      0.8887851635638215,
+      0.11121483643617847
+    ],
+    "raw_probability_sum": 1.0000000223517418,
+    "zero_count": 0,
+    "logits": [
+      -1.2806837558746338,
+      -3.3590755462646484
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/71a2393072e9e2b2ac08da0c",
+    "group": "typesafe/aa7d13208209c35c44fa",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_invoice_processing",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/71a2393072e9e2b2ac08da0c",
+    "p": [
+      0.9148868850254499,
+      0.08511311497455004
+    ],
+    "raw_probability_sum": 1.0000000074505806,
+    "zero_count": 0,
+    "logits": [
+      -0.9276720285415649,
+      -3.3024914264678955
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/038af1200d540a0bf57998af",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/038af1200d540a0bf57998af",
+    "p": [
+      0.8049900651721666,
+      0.1950099348278334
+    ],
+    "raw_probability_sum": 0.9999999850988388,
+    "zero_count": 0,
+    "logits": [
+      -2.3556904792785645,
+      -3.773469924926758
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/071dd61c989b844c00d9a044",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/071dd61c989b844c00d9a044",
+    "p": [
+      0.8311360230703347,
+      0.1688639769296653
+    ],
+    "raw_probability_sum": 1.0000000298023224,
+    "zero_count": 0,
+    "logits": [
+      -2.955714702606201,
+      -4.54941463470459
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/262a579d707cf168d232dfac",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/262a579d707cf168d232dfac",
+    "p": [
+      0.9463998502373628,
+      0.053600149762637155
+    ],
+    "raw_probability_sum": 0.9999999552965164,
+    "zero_count": 0,
+    "logits": [
+      -2.384861469268799,
+      -5.255974769592285
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/3672409852c288939a70b014",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/3672409852c288939a70b014",
+    "p": [
+      0.9755843496187192,
+      0.024415650381280747
+    ],
+    "raw_probability_sum": 1.0000000391155481,
+    "zero_count": 0,
+    "logits": [
+      -2.20961332321167,
+      -5.897425651550293
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/7833941fa09a39d5d476f659",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/7833941fa09a39d5d476f659",
+    "p": [
+      0.5268893994954049,
+      0.4731106005045951
+    ],
+    "raw_probability_sum": 0.9999999701976776,
+    "zero_count": 0,
+    "logits": [
+      -1.981231689453125,
+      -2.088893175125122
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/7c569aa2fd16bc4aa453f96a",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "host_compromise",
+      "account_takeover",
+      "mail_campaign",
+      "exfiltration"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/7c569aa2fd16bc4aa453f96a",
+    "p": [
+      0.9695302289762323,
+      0.02370826351423815,
+      0.0012588150620665584,
+      0.005502692447463006
+    ],
+    "raw_probability_sum": 0.9999999956926331,
+    "zero_count": 0,
+    "logits": [
+      -1.859227180480957,
+      -5.570215225219727,
+      -8.505867958068848,
+      -7.030801296234131
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/8aa75529afecc0bb35863121",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/8aa75529afecc0bb35863121",
+    "p": [
+      0.503613293170929,
+      0.49638670682907104
+    ],
+    "raw_probability_sum": 1.0,
+    "zero_count": 0,
+    "logits": [
+      -2.4623475074768066,
+      -2.4768009185791016
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/8d213d0e5832c622ccb3affd",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/8d213d0e5832c622ccb3affd",
+    "p": [
+      0.45364425938261327,
+      0.5463557406173867
+    ],
+    "raw_probability_sum": 0.9999999701976776,
+    "zero_count": 0,
+    "logits": [
+      -2.1483154296875,
+      -1.9623584747314453
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/8ff5059f90a822b19bf06566",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/8ff5059f90a822b19bf06566",
+    "p": [
+      0.8733787666764672,
+      0.12662123332353284
+    ],
+    "raw_probability_sum": 0.9999999850988388,
+    "zero_count": 0,
+    "logits": [
+      -1.9450770616531372,
+      -3.876246213912964
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/a82b9f2a534055b6a5c1e979",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/a82b9f2a534055b6a5c1e979",
+    "p": [
+      0.8893038233213981,
+      0.11069617667860188
+    ],
+    "raw_probability_sum": 0.9999999776482582,
+    "zero_count": 0,
+    "logits": [
+      -2.629511833190918,
+      -4.713161468505859
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/a8c2e4bd886776e7deb56e62",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/a8c2e4bd886776e7deb56e62",
+    "p": [
+      0.1977038026540338,
+      0.8022961973459661
+    ],
+    "raw_probability_sum": 1.0000000298023224,
+    "zero_count": 0,
+    "logits": [
+      -3.234778881072998,
+      -1.8340709209442139
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/cd01be19318c4f62a91eaf57",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "single_entity",
+      "workgroup",
+      "organization_wide"
+    ],
+    "label": 2,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/cd01be19318c4f62a91eaf57",
+    "p": [
+      0.39950149060781326,
+      0.11875387672323356,
+      0.4817446326689532
+    ],
+    "raw_probability_sum": 1.0000000298023224,
+    "zero_count": 0,
+    "logits": [
+      -2.8100996017456055,
+      -4.023263931274414,
+      -2.6229028701782227
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/e2e58201a90c11192f70edbf",
+    "group": "typesafe/cf5ff3dc3d02131e9021",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/e2e58201a90c11192f70edbf",
+    "p": [
+      0.4573469323710521,
+      0.5426530676289478
+    ],
+    "raw_probability_sum": 1.0000000298023224,
+    "zero_count": 0,
+    "logits": [
+      -2.464534282684326,
+      -2.293506383895874
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/106f24d17ca754e9f97f906f",
+    "group": "typesafe/d19a595946555a788558",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/106f24d17ca754e9f97f906f",
+    "p": [
+      0.4592741131782532,
+      0.5407258868217468
+    ],
+    "raw_probability_sum": 1.0,
+    "zero_count": 0,
+    "logits": [
+      -2.394446849822998,
+      -2.2311816215515137
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/358bd473f925cd0851544f05",
+    "group": "typesafe/d19a595946555a788558",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/358bd473f925cd0851544f05",
+    "p": [
+      0.8425998593926346,
+      0.1574001406073654
+    ],
+    "raw_probability_sum": 0.9999999403953552,
+    "zero_count": 0,
+    "logits": [
+      -2.2695207595825195,
+      -3.9472217559814453
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/36d0a4df0d8697ca942472a1",
+    "group": "typesafe/ee5b69eb67b2c01a07b2",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "money_back",
+      "replacement_or_fix",
+      "explanation_only",
+      "speak_to_human",
+      "not_stated"
+    ],
+    "label": 2,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/36d0a4df0d8697ca942472a1",
+    "p": [
+      0.04465710839176366,
+      0.0029113689024617205,
+      0.11895447975004882,
+      0.6602065152779362,
+      0.17327052767778958
+    ],
+    "raw_probability_sum": 1.0000000621657819,
+    "zero_count": 0,
+    "logits": [
+      -2.9698538780212402,
+      -5.700243949890137,
+      -1.990126371383667,
+      -0.2763146460056305,
+      -1.6140131950378418
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/5d03a2d9676697acb67c1194",
+    "group": "typesafe/ee5b69eb67b2c01a07b2",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "unauthorized_charge",
+      "card_declined",
+      "refund_request",
+      "billing_dispute",
+      "account_access",
+      "cancel_account",
+      "delivery_issue",
+      "general_question"
+    ],
+    "label": 3,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/5d03a2d9676697acb67c1194",
+    "p": [
+      0.0007703713674239699,
+      6.48121492290258e-06,
+      0.005265105175546838,
+      0.963081382817573,
+      1.3643278505274572e-05,
+      2.5636102392872725e-05,
+      0.0001694857241468916,
+      0.03066789431948822
+    ],
+    "raw_probability_sum": 0.9999999761657818,
+    "zero_count": 0,
+    "logits": [
+      -7.3412299156188965,
+      -12.119194030761719,
+      -5.419246196746826,
+      -0.2102092206478119,
+      -11.374855041503906,
+      -10.744100570678711,
+      -8.85533332824707,
+      -3.657130718231201
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/692da1b417be96e6e96f0389",
+    "group": "typesafe/ee5b69eb67b2c01a07b2",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/692da1b417be96e6e96f0389",
+    "p": [
+      0.9694719964933397,
+      0.030528003506660264
+    ],
+    "raw_probability_sum": 1.0000000558793545,
+    "zero_count": 0,
+    "logits": [
+      -1.7700798511505127,
+      -5.228187084197998
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/c8c28c050bfd812fabf0b361",
+    "group": "typesafe/ee5b69eb67b2c01a07b2",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/c8c28c050bfd812fabf0b361",
+    "p": [
+      0.9356081517075998,
+      0.0643918482924002
+    ],
+    "raw_probability_sum": 0.9999999329447746,
+    "zero_count": 0,
+    "logits": [
+      -2.001962423324585,
+      -4.6781721115112305
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/59f2f955c1c757549fd8f0b5",
+    "group": "typesafe/ee5b69eb67b2c01a07b2",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_customer_service",
+    "type": "choice",
+    "variant": "clean",
+    "keys": [
+      "same",
+      "more",
+      "less",
+      "not_asking_for_money"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/59f2f955c1c757549fd8f0b5",
+    "p": [
+      0.8837405413721864,
+      0.0397189641197759,
+      0.021354398110011354,
+      0.05518609639802638
+    ],
+    "raw_probability_sum": 1.0000000707805157,
+    "zero_count": 0,
+    "logits": [
+      -1.5698025226593018,
+      -4.672137260437012,
+      -5.292708396911621,
+      -4.343255043029785
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/2e04814d4276ede847155d52",
+    "group": "typesafe/f835a5fdb120a5ca789d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 0,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/2e04814d4276ede847155d52",
+    "p": [
+      0.34387725591659546,
+      0.6561227440834045
+    ],
+    "raw_probability_sum": 1.0,
+    "zero_count": 0,
+    "logits": [
+      -1.9855600595474243,
+      -1.3394969701766968
+    ],
+    "inference_temperature": 1.0
+  },
+  {
+    "id": "typesafe/cc4fc1102bf73b60b42d317e",
+    "group": "typesafe/f835a5fdb120a5ca789d",
+    "question": "decision",
+    "source": "typesafe",
+    "task": "typesafe_security_incidents",
+    "type": "noul",
+    "variant": "clean",
+    "keys": [
+      "false",
+      "true"
+    ],
+    "label": 1,
+    "control_id": null,
+    "pair_id": null,
+    "sibling": null,
+    "parent": "typesafe/cc4fc1102bf73b60b42d317e",
+    "p": [
+      0.6756268933041756,
+      0.3243731066958245
+    ],
+    "raw_probability_sum": 1.0000000596046448,
+    "zero_count": 0,
+    "logits": [
+      -2.3478541374206543,
+      -3.0816006660461426
+    ],
+    "inference_temperature": 1.0
+  }
+]
