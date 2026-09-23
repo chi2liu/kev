@@ -1,0 +1,32 @@
+[
+ {
+  "base": "Qwen/Qwen3.8-27B",
+  "base_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "weights_dtype": "bf16",
+  "dtype": "bf16",
+  "checkpointing": 1,
+  "batch": 2,
+  "accum": 4,
+  "p_none_pair": 0.25,
+  "lora": 16,
+  "lora_targets": "all",
+  "epochs": 2,
+  "lr": 5e-05,
+  "seed": 1
+ },
+ {
+  "base": "Qwen/Qwen3.8-27B",
+  "base_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "weights_dtype": "bf16",
+  "dtype": "bf16",
+  "checkpointing": 1,
+  "batch": 2,
+  "accum": 4,
+  "p_none_pair": 0.25,
+  "lora": 16,
+  "lora_targets": "all",
+  "epochs": 2,
+  "lr": 5e-05,
+  "seed": 2
+ }
+]

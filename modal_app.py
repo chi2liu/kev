@@ -85,7 +85,7 @@ def remote_source_hashes():
     return source_hashes()
 
 
-@app.function(image=image, gpu=GPU, cpu=TRIAL_CPU, memory=TRIAL_MEMORY, max_containers=24, retries=0, timeout=14400,   # a 35B-A3B bf16 checkpoint (70 GB) is staged through host memory while loading; the old 48 GB cap stalled the container
+@app.function(image=image, gpu=GPU, cpu=TRIAL_CPU, memory=TRIAL_MEMORY, max_containers=24, retries=0, timeout=28800,   # a 35B-A3B bf16 checkpoint (70 GB) is staged through host memory while loading; the old 48 GB cap stalled the container
               volumes={RUNS_MOUNT: runs_volume, HF_MOUNT: hf_cache}, secrets=secrets)
 def run_trial(study, index, label, config, suite, expected_sources, git_commit, existing=None, transfer=None):
     """One trial in one container. `existing` is a checkpoint path on the runs volume or a Hub id (legacy scoring)."""
@@ -308,8 +308,8 @@ def admit_study(suite, plan_path, name, gpu, existing, transfer, budget, timeout
         raise ValueError("study name must be a simple unique identifier")
     if (ROOT / "runs" / name).exists():
         raise FileExistsError("choose a new study name; existing results are immutable")
-    if not 60 <= timeout <= 14400 or not 0 < budget <= 250:   # overnight authorization: $500 total, tracked in PLAN.md
-        raise ValueError("timeout must be 60..14400 seconds and study budget <= $250")
+    if not 60 <= timeout <= 28800 or not 0 < budget <= 250:   # 8 h: a 2-epoch 27B on H200 takes ~4 h; budgets tracked in PLAN.md
+        raise ValueError("timeout must be 60..28800 seconds and study budget <= $250")
     trials = load_plan(ROOT / suite, ROOT / plan_path) if plan_path else []
     upper = compute_bound(gpu, timeout, len(trials) + len(existing))
     if upper > budget:
