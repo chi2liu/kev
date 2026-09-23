@@ -110,8 +110,19 @@ def combine():
     return dict(c)
 
 
+def spot_check(test):
+    """The protocol's human sample: 50 test questions drawn with a fixed seed, in the tools/review input format."""
+    items = [(r, qid) for r in test for qid in r["questions"]]
+    spot = random.Random("documents-v1-spot-check").sample(items, 50)
+    write_jsonl(WORK / "spot_check.jsonl", [{"id": f"{r['_meta']['id']}#{qid}", "document": r["state"], "source": f"cfpb · {r['_meta']['length_bucket']} · {r['_meta']['chars']} chars",
+                                              "question": {"type": "choice", "instructions": r["questions"][qid]["instructions"], "options": r["questions"][qid]["criteria"]},
+                                              "proposed_label": r["questions"][qid]["label"], "label_origin": "frozen", "judges": [], "adjudication": None} for r, qid in spot])
+    print(f"spot-check sample: 50 of {len(items)} test questions -> {WORK / 'spot_check.jsonl'}")
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--report", action="store_true"); ap.add_argument("--freeze", default=""); ap.add_argument("--combine", action="store_true")
+    ap.add_argument("--spot-check", action="store_true", help="write the 50-item human sample from the (final) test split")
     a = ap.parse_args()
     if a.combine: return combine()
     adj_path = WORK / "adjudications.jsonl"
@@ -121,6 +132,9 @@ def main():
     for split in ("development", "test"):
         splits[split], q, report[split] = eval_split(split, adjudications); queue += q
     print(json.dumps(report, indent=1))
+    if a.spot_check:
+        if report["test"].get("awaiting_adjudication"): raise SystemExit("test adjudications missing")
+        return spot_check(splits["test"])
     write_jsonl(WORK / "adjudication_queue.jsonl", queue)
     print(f"adjudication queue: {len(queue)} items -> {WORK / 'adjudication_queue.jsonl'}")
     if not a.freeze: return
@@ -133,12 +147,7 @@ def main():
         write_jsonl(out / f"{split}.jsonl", recs)
         files[f"{split}.jsonl"] = {"sha256": hashlib.sha256((out / f"{split}.jsonl").read_bytes()).hexdigest(), "records": len(recs), "questions": sum(len(r["questions"]) for r in recs),
                                    "by_length": dict(Counter(r["_meta"]["length_bucket"] for r in recs))}
-    rng = random.Random("documents-v1-spot-check")
-    test_items = [(r, qid) for r in splits["test"] for qid in r["questions"]]
-    spot = rng.sample(test_items, 50)
-    write_jsonl(WORK / "spot_check.jsonl", [{"id": f"{r['_meta']['id']}#{qid}", "document": r["state"], "source": "cfpb",
-                                              "question": {"type": "choice", "instructions": r["questions"][qid]["instructions"], "options": r["questions"][qid]["criteria"]},
-                                              "proposed_label": r["questions"][qid]["label"], "label_origin": "frozen", "judges": [], "adjudication": None} for r, qid in spot])
+    spot_check(splits["test"])
     build = json.load(open(WORK / "candidates" / "build.json"))
     write_json(out / "manifest.json", {"version": "documents-v1", "partitions": ["train", "development", "test"], "locked": ["test"], "files": files,
                                        "source": build["repo"] + "@" + build["revision"], "rights": "US CFPB consumer complaint database, US government work (public domain)",
