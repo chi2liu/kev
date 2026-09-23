@@ -10,7 +10,8 @@ GET /v1/models), so existing Jev / TypeSafe clients only change their base URL.
 
 Settings are read when you deploy: KEV_MODEL (any Kev checkpoint on the Hugging Face Hub, `repo` or `repo@revision`;
 default jaredpalmer/kev-4b), KEV_GPU (override the GPU), KEV_API_KEY (bearer auth; without it the URL is the only secret),
-HF_TOKEN (for a private checkpoint), KEV_MIN_CONTAINERS (1 keeps one container warm; default 0 scales to zero after 5 idle
+HF_TOKEN (for a private checkpoint; if it is set in your shell it is uploaded as a Modal secret, so unset it for public
+checkpoints), KEV_MIN_CONTAINERS (1 keeps one container warm; default 0 scales to zero after 5 idle
 minutes), KEV_APP_NAME (default "kev"; one app per endpoint). The image installs the kev package at KEV_REF, the code the
 released checkpoints were measured with; weights and compiled kernels are cached on the `kev-hf-cache` volume, so only the
 first cold start downloads them. A request that waits longer than 150 s for a cold start gets an HTTP 303 to a result URL
@@ -29,7 +30,8 @@ GPU_FOR = {"kev-0.8b": ["L4", "A10G", "L40S"], "kev-4b": ["L4", "A10G", "L40S"],
 SETTINGS = {"KEV_MODEL": "jaredpalmer/kev-4b", "KEV_APP_NAME": "kev", "KEV_MIN_CONTAINERS": "0", "KEV_GPU": ""}
 SETTINGS = {k: os.environ.get(k, v) for k, v in SETTINGS.items()}
 MODEL = SETTINGS["KEV_MODEL"]
-GPU = SETTINGS["KEV_GPU"] or GPU_FOR.get(MODEL.split("@")[0].split("/")[-1], ["H100", "H200"])
+NAME = MODEL.split("@")[0].split("/")[-1]                             # "kev-4b-support" (a fine-tune) gets kev-4b's GPUs
+GPU = SETTINGS["KEV_GPU"] or next((gpus for size, gpus in sorted(GPU_FOR.items(), key=lambda kv: -len(kv[0])) if NAME.startswith(size)), ["H100", "H200"])
 # Secret values never go into the image: they ride in a Modal secret (present in the container's env, so this stays equal there).
 SECRET = {k: os.environ[k] for k in ("KEV_API_KEY", "HF_TOKEN") if os.environ.get(k)}
 

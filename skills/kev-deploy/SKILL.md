@@ -37,7 +37,9 @@ Modal's official skill and documentation, which helps with anything beyond this 
 
 A warm container costs the GPU's hourly rate only while it is up (L4 about $0.80/h, A100-80GB about $2.50/h); after five
 idle minutes it scales to zero. `KEV_MIN_CONTAINERS=1` keeps one warm (no cold starts, pays the hourly rate all the time).
-Any Kev checkpoint on the Hub works (`you/kev-4b-support`, `repo@revision`); a private one needs `HF_TOKEN` at deploy time.
+Any Kev checkpoint on the Hub works (`you/kev-4b-support`, `repo@revision`); the GPU is picked by the name's size prefix
+(`kev-4b...` -> L4), anything else gets an H100 unless `KEV_GPU` says otherwise. A private checkpoint needs `HF_TOKEN` at
+deploy time; the file uploads `HF_TOKEN` as a Modal secret whenever it is set in the shell, so unset it for public ones.
 Checkpoints fine-tuned with the `kev-finetune` skill deploy the same way once published.
 
 ## 3. Deploy
