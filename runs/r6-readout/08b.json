@@ -1,0 +1,216 @@
+{
+  "size": "08b",
+  "parent": "runs/night2-08b-du2/00-trial-0",
+  "parent_temperature": 2.406050072164233,
+  "arms": [
+    {
+      "arm": "C08",
+      "trial": "runs/r5-combined/05-trial-5",
+      "temperature": 1.1224620483093728,
+      "short": {
+        "acc": {
+          "delta": 0.0015243902439023849,
+          "ci95": [
+            -0.018292682926829285,
+            0.021341463414634165
+          ]
+        },
+        "brier": {
+          "delta": -0.0013344931958986783,
+          "ci95": [
+            -0.018165538307034955,
+            0.014825386157545228
+          ]
+        },
+        "confident_error_rate": {
+          "delta": 0.01676829268292683,
+          "ci95": [
+            0.0030487804878048777,
+            0.03353658536585366
+          ]
+        }
+      },
+      "short_metrics": {
+        "acc": 0.6539634146341463,
+        "brier": 0.42910597311372545,
+        "confident_error_rate": 0.019817073170731708,
+        "coverage_at_5pct_error": 0.11585365853658537
+      },
+      "long": {
+        "delta": 0.10321489001692047,
+        "ci95": [
+          0.05630965211663973,
+          0.14809383922688338
+        ]
+      },
+      "long_acc": 0.5482233502538071,
+      "externals": {
+        "semif": {
+          "delta": 0.08333333333333337,
+          "ci95": [
+            0.04166666666666663,
+            0.125
+          ],
+          "n": 144,
+          "margin": -0.03,
+          "acc": 0.7847222222222222
+        },
+        "scienthoon": {
+          "delta": -0.05727376861397482,
+          "ci95": [
+            -0.07445589919816725,
+            -0.04009163802978233
+          ],
+          "n": 873,
+          "margin": -0.02,
+          "acc": 0.4627720504009164
+        },
+        "wanli2": {
+          "delta": -0.010978043912175606,
+          "ci95": [
+            -0.024950099800399195,
+            0.003992015968063867
+          ],
+          "n": 1002,
+          "margin": -0.02,
+          "acc": 0.5588822355289421
+        },
+        "typesafe": {
+          "delta": -0.011235955056179803,
+          "ci95": [
+            -0.11764705882352944,
+            0.08538224495148165
+          ],
+          "n": 89,
+          "margin": -0.03,
+          "acc": 0.6179775280898876
+        }
+      },
+      "pooled_external": {
+        "delta": -0.02371916508538896,
+        "ci95": [
+          -0.03518866432057006,
+          -0.012303908901657548
+        ]
+      },
+      "unknowable_share": 0.0,
+      "criteria": {
+        "1_long_lower_above_0": true,
+        "1_long_point_at_least_5pp": true,
+        "2_short_acc_lower_at_least_minus_1pp": false,
+        "2_short_brier_upper_at_most_0.01": false,
+        "2_short_confident_errors_upper_at_most_1pp": false,
+        "3_semif_lower_at_least_margin": true,
+        "3_scienthoon_lower_at_least_margin": false,
+        "3_wanli2_lower_at_least_margin": false,
+        "3_typesafe_lower_at_least_margin": false,
+        "3_pooled_point_at_least_0": false,
+        "3_pooled_lower_at_least_minus_1pp": false,
+        "3_unknowable_share_at_most_0.05": true
+      },
+      "complete": true,
+      "passed": false
+    },
+    {
+      "arm": "combined",
+      "trial": "runs/r6-08b/00-trial-0",
+      "temperature": 1.096824979694626,
+      "short": {
+        "acc": {
+          "delta": 0.0,
+          "ci95": [
+            -0.01981707317073178,
+            0.021341463414634165
+          ]
+        },
+        "brier": {
+          "delta": -0.0050522481657834795,
+          "ci95": [
+            -0.01818067473210946,
+            0.007492886956501384
+          ]
+        },
+        "confident_error_rate": {
+          "delta": 0.013719512195121953,
+          "ci95": [
+            0.0,
+            0.03048780487804878
+          ]
+        }
+      },
+      "short_metrics": {
+        "acc": 0.6524390243902439,
+        "brier": 0.42538821814384054,
+        "confident_error_rate": 0.01676829268292683,
+        "coverage_at_5pct_error": 0.16615853658536586
+      },
+      "long": "unread",
+      "externals": {
+        "semif": "unread",
+        "scienthoon": "unread",
+        "wanli2": "unread",
+        "typesafe": "unread"
+      },
+      "pooled_external": "unread",
+      "unknowable_share": "unread",
+      "criteria": {
+        "2_short_acc_lower_at_least_minus_1pp": false,
+        "2_short_brier_upper_at_most_0.01": true,
+        "2_short_confident_errors_upper_at_most_1pp": false
+      },
+      "complete": false,
+      "passed": false
+    },
+    {
+      "arm": "combined-replay6000",
+      "trial": "runs/r6-08b/01-trial-1",
+      "temperature": 1.319507910772894,
+      "short": {
+        "acc": {
+          "delta": -0.010670731707317138,
+          "ci95": [
+            -0.03201219512195119,
+            0.010670731707317138
+          ]
+        },
+        "brier": {
+          "delta": 0.009144175092004658,
+          "ci95": [
+            -0.005398520999142148,
+            0.024357097620421958
+          ]
+        },
+        "confident_error_rate": {
+          "delta": 0.003048780487804878,
+          "ci95": [
+            -0.0030487804878048777,
+            0.009146341463414635
+          ]
+        }
+      },
+      "short_metrics": {
+        "acc": 0.6417682926829268,
+        "brier": 0.43958464140162873,
+        "confident_error_rate": 0.006097560975609756,
+        "coverage_at_5pct_error": 0.20884146341463414
+      },
+      "long": "unread",
+      "externals": {
+        "semif": "unread",
+        "scienthoon": "unread",
+        "wanli2": "unread",
+        "typesafe": "unread"
+      },
+      "pooled_external": "unread",
+      "unknowable_share": "unread",
+      "criteria": {
+        "2_short_acc_lower_at_least_minus_1pp": false,
+        "2_short_brier_upper_at_most_0.01": false,
+        "2_short_confident_errors_upper_at_most_1pp": true
+      },
+      "complete": false,
+      "passed": false
+    }
+  ],
+  "ranking": []
+}

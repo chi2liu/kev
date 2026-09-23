@@ -166,3 +166,10 @@ runs/night2-08b-du2/00-trial-0/development/*
 # round-6 training data over ~10 MB (scripts/build_round6_data.py, scripts/build_long_states.py; sha256 in each manifest)
 evals/round6/longstate-v3/train.jsonl
 evals/round6/soft-*/train.jsonl
+# round-6 read-outs and read inputs (scripts/round6_readout.py, scripts/round6_confirm.py)
+!runs/r6-readout/
+!runs/r6-readout/*.json
+!runs/r6-verdict/
+!runs/r6-verdict/*.json
+!runs/r6-*/rows.json
+!runs/r5r-C*-wanli2/rows.json
