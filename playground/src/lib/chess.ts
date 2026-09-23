@@ -3,14 +3,28 @@
 import { Chess, type Move } from "chess.js";
 import { api, type SystemOneRequest, type SystemOneResponse } from "@/lib/kev";
 
-export const PIECE_NAMES: Record<string, string> = { p: "pawn", n: "knight", b: "bishop", r: "rook", q: "queen", k: "king" };
-export const EVAL_LEVELS = ["Black is clearly winning", "Black is better", "Roughly equal", "White is better", "White is clearly winning"];
+export const PIECE_NAMES: Record<string, string> = {
+  p: "pawn",
+  n: "knight",
+  b: "bishop",
+  r: "rook",
+  q: "queen",
+  k: "king",
+};
+export const EVAL_LEVELS = [
+  "Black is clearly winning",
+  "Black is better",
+  "Roughly equal",
+  "White is better",
+  "White is clearly winning",
+];
 
 export function describeMove(m: Move): string {
   const parts = [`${PIECE_NAMES[m.piece]} ${m.from} to ${m.to}`];
   if (m.captured) parts.push(`captures ${PIECE_NAMES[m.captured]}`);
   if (m.promotion) parts.push(`promotes to ${PIECE_NAMES[m.promotion]}`);
-  if (m.flags.includes("k") || m.flags.includes("q")) parts[0] = m.flags.includes("k") ? "castles kingside" : "castles queenside";
+  if (m.flags.includes("k") || m.flags.includes("q"))
+    parts[0] = m.flags.includes("k") ? "castles kingside" : "castles queenside";
   if (m.san.endsWith("#")) parts.push("checkmate");
   else if (m.san.endsWith("+")) parts.push("gives check");
   return parts.join(", ");
@@ -19,7 +33,9 @@ export function describeMove(m: Move): string {
 export function positionState(chess: Chess) {
   const side = chess.turn() === "w" ? "White" : "Black";
   const history = chess.history();
-  const moves = history.length ? history.map((m, i) => (i % 2 === 0 ? `${i / 2 + 1}. ${m}` : m)).join(" ") : "(game start)";
+  const moves = history.length
+    ? history.map((m, i) => (i % 2 === 0 ? `${i / 2 + 1}. ${m}` : m)).join(" ")
+    : "(game start)";
   return {
     game: "chess",
     side_to_move: side,
@@ -77,10 +93,27 @@ export async function askModel(chess: Chess, sample = false): Promise<ModelMove>
   let san = a.choice;
   if (sample) {
     let u = Math.random();
-    for (const [k, p] of Object.entries(a.probabilities)) { u -= p; if (u <= 0) { san = k; break; } }
+    for (const [k, p] of Object.entries(a.probabilities)) {
+      u -= p;
+      if (u <= 0) {
+        san = k;
+        break;
+      }
+    }
   }
-  if (!legal.some((m) => m.san === san)) throw new Error(`model returned ${JSON.stringify(san)}, which is not a legal move here`);
-  return { san, probabilities: a.probabilities, confidence: a.confidence, evaluation: e.score, evalConfidence: e.confidence, evalProbabilities: e.probabilities, latency_ms: r.latency_ms, input_tokens: r.usage.input_tokens, n_legal: legal.length };
+  if (!legal.some((m) => m.san === san))
+    throw new Error(`model returned ${JSON.stringify(san)}, which is not a legal move here`);
+  return {
+    san,
+    probabilities: a.probabilities,
+    confidence: a.confidence,
+    evaluation: e.score,
+    evalConfidence: e.confidence,
+    evalProbabilities: e.probabilities,
+    latency_ms: r.latency_ms,
+    input_tokens: r.usage.input_tokens,
+    n_legal: legal.length,
+  };
 }
 
 // ---- persistence -------------------------------------------------------------------------------
@@ -103,26 +136,41 @@ export function replay(moves: SavedGame["moves"]): { chess: Chess; moves: SavedG
   const chess = new Chess();
   const ok: SavedGame["moves"] = [];
   for (const m of moves) {
-    try { chess.move(m.san); ok.push(m); } catch { break; }
+    try {
+      chess.move(m.san);
+      ok.push(m);
+    } catch {
+      break;
+    }
   }
   return { chess, moves: ok };
 }
 
 // The legal move `san` in the position after `game`, or undefined if it is not legal there.
 export function legalMove(game: SavedGame, san: string): Move | undefined {
-  return replay(game.moves).chess.moves({ verbose: true }).find((m) => m.san === san);
+  return replay(game.moves)
+    .chess.moves({ verbose: true })
+    .find((m) => m.san === san);
 }
 
 export function loadGames(): SavedGame[] {
   if (typeof window === "undefined") return [];
   let raw: unknown;
-  try { raw = JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; }
+  try {
+    raw = JSON.parse(localStorage.getItem(KEY) ?? "[]");
+  } catch {
+    return [];
+  }
   if (!Array.isArray(raw)) return [];
   // stored games are untrusted: keep only the legal prefix of each move list so the board and the list agree
-  return raw.filter((g): g is SavedGame => !!g && typeof g.id === "string" && Array.isArray(g.moves)).map((g) => {
-    const { chess, moves } = replay(g.moves);
-    return moves.length === g.moves.length ? g : { ...g, moves, pgn: chess.pgn(), result: resultText(chess) };
-  });
+  return raw
+    .filter((g): g is SavedGame => !!g && typeof g.id === "string" && Array.isArray(g.moves))
+    .map((g) => {
+      const { chess, moves } = replay(g.moves);
+      return moves.length === g.moves.length
+        ? g
+        : { ...g, moves, pgn: chess.pgn(), result: resultText(chess) };
+    });
 }
 
 export function saveGames(games: SavedGame[]) {

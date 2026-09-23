@@ -37,7 +37,7 @@ KEV_BASE_URL=http://127.0.0.1:8009 uv run --extra serve python -m pytest tests/t
 ```
 
 Space changes: `python3 -m py_compile space/app.py`; the Space vendors `kev/{model,api,checkpoint}.py` via
-`scripts/publish_space.sh`, so any change to those needs a republish. Playground: `cd playground && npm run lint && npx tsc --noEmit -p .`.
+`scripts/publish_space.sh`, so any change to those needs a republish. Playground: `cd playground && npm run lint && npm run format:check && npx tsc --noEmit -p .`.
 
 ### Browser end-to-end checks
 

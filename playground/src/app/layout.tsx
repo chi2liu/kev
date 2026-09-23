@@ -14,15 +14,13 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "kev playground",
-  description: "Jev-style decision model: shared state, isolated questions, direct probability readout",
+  description:
+    "Jev-style decision model: shared state, isolated questions, direct probability readout",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

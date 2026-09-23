@@ -366,7 +366,7 @@ These commands use development data. Test data requires `--allow-test`. The benc
 ```bash
 uv run --extra serve python -m pytest tests/test_unit.py tests/test_research.py -q  # no weights, no server; runs in CI
 KEV_BASE_URL=http://127.0.0.1:8009 uv run --extra serve python -m pytest tests/test_api.py -q   # against a running server
-cd playground && npm run lint && npx next typegen && npx tsc --noEmit -p .
+cd playground && npm run lint && npm run format:check && npx next typegen && npx tsc --noEmit -p .
 ```
 
 The API tests run TypeSafe's example requests and the official SDK against your local server.
