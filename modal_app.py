@@ -405,7 +405,9 @@ def pull_study(study):
         missing = sorted(d for d in volume_names(f"/{study}")[0] if not (target / d).exists())
         for d in missing: pull_volume(f"/{study}/{d}", target)
         (target / "results.jsonl").unlink(missing_ok=True)   # derived from the trials' result.json; aggregate rebuilds it
-        print(f"{study}: added {len(missing)} trial(s) {missing or ''}")
+        partial = sorted(p.name for p in target.glob("*-trial-*") if p.is_dir() and not (p / "result.json").exists())
+        print(f"{study}: added {len(missing)} trial(s) {missing or ''}"
+              + (f"; local trial dirs without result.json (still running, or an interrupted download to delete and re-pull): {partial}" if partial else ""))
     subprocess.run([sys.executable, "-m", "kev.experiment", "--aggregate", "--out", str(target)], check=True, cwd=ROOT)
     return target
 
