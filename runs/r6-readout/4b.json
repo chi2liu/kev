@@ -959,21 +959,79 @@
         "confident_error_rate": 0.025914634146341462,
         "coverage_at_5pct_error": 0.6021341463414634
       },
-      "long": "unread",
-      "externals": {
-        "semif": "unread",
-        "scienthoon": "unread",
-        "wanli2": "unread",
-        "typesafe": "unread"
+      "long": {
+        "delta": 0.18950930626057538,
+        "ci95": [
+          0.14454593587005984,
+          0.234006734006734
+        ]
       },
-      "pooled_external": "unread",
-      "unknowable_share": "unread",
+      "long_acc": 0.727580372250423,
+      "externals": {
+        "semif": {
+          "delta": -0.01388888888888884,
+          "ci95": [
+            -0.04166666666666663,
+            0.01388888888888884
+          ],
+          "n": 144,
+          "margin": -0.03,
+          "acc": 0.875
+        },
+        "scienthoon": {
+          "delta": -0.03665521191294385,
+          "ci95": [
+            -0.056128293241695326,
+            -0.018327605956471982
+          ],
+          "n": 873,
+          "margin": -0.02,
+          "acc": 0.6597938144329897
+        },
+        "wanli2": {
+          "delta": 0.009980039920159611,
+          "ci95": [
+            -0.005988023952095747,
+            0.024975049900199563
+          ],
+          "n": 1002,
+          "margin": -0.02,
+          "acc": 0.7085828343313373
+        },
+        "typesafe": {
+          "delta": 0.011235955056179803,
+          "ci95": [
+            -0.04599037690457091,
+            0.06364119922630555
+          ],
+          "n": 89,
+          "margin": -0.03,
+          "acc": 0.8539325842696629
+        }
+      },
+      "pooled_external": {
+        "delta": -0.010910815939278895,
+        "ci95": [
+          -0.021915720250099753,
+          0.0
+        ]
+      },
+      "unknowable_share": 0.0,
       "criteria": {
+        "1_long_lower_above_0": true,
+        "1_long_point_at_least_5pp": true,
         "2_short_acc_lower_at_least_minus_1pp": true,
         "2_short_brier_upper_at_most_0.01": true,
-        "2_short_confident_errors_upper_at_most_1pp": true
+        "2_short_confident_errors_upper_at_most_1pp": true,
+        "3_semif_lower_at_least_margin": false,
+        "3_scienthoon_lower_at_least_margin": false,
+        "3_wanli2_lower_at_least_margin": true,
+        "3_typesafe_lower_at_least_margin": false,
+        "3_pooled_point_at_least_0": false,
+        "3_pooled_lower_at_least_minus_1pp": false,
+        "3_unknowable_share_at_most_0.05": true
       },
-      "complete": false,
+      "complete": true,
       "passed": false
     }
   ],

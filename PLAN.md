@@ -125,6 +125,100 @@ Unattended session (program: [`docs/prompts/overnight-round6.md`](docs/prompts/o
 
 **A2 probe (PLAN_27b, read 2026-09-22, H200, ~$10):** Qwen3.8-27B zero-shot, `transfer-v4` dev 0.812 (SemIf prompt) / 0.761 (plain); `transfer-v9` dev 0.774 (SemIf), MMLU-Pro 0.635, MMLU 0.762, `deadline` 0.95, unknowable share at >= 0.9 0.36; SemIf-144 0.944 / 0.910; WANLI-256 0.766 / 0.719 (the trained Kev-9B: 0.703). Reports under `runs/probes/qwen38-27b-*`.
 
+### Round 6 result (2026-09-23, read once per rule; no size released, no candidate confirmed)
+
+**Spend.** Baseline $543.10 metered at 02:03Z; **$855.19 at 08:45Z, $312 for the round** (readings lag and get revised). Admission bounds: Phase 1 (A1) $43.86 (actual ≈ $25: 65 / 65 / 100 min on H200); B1 (27B) $75.18 (actual ≈ $40: 110 / 114 / 124 min); Phase 2 trials $291.33 (round 1) + $134.70 (round 2); Phase 4 $0 (nothing qualified for a confirmatory or locked read). **Deviation to note:** every `benchmarks` read batch carried the 7,200 s timeout the 9B long-panel reads need, so their admission bounds (≈ $1,100 over 92 read jobs) bear no relation to what they cost (≈ $60 by the metered readings); the spend rule of section 2.1 was applied on running bounds at every launch and was never near $1,000, but the Phase-2 cap on bounds is only meaningful for the trials. Set read timeouts per suite next time (1,800 s externals, 3,600 s `transfer-v9`, 7,200 s long panels).
+
+**Capacity.** The workspace ran at most 10 GPU containers at once, so 21 round-1 trials and every read queued; nothing was relaunched. All 28 trials and all 92 reads finished; nothing is pending on Modal, no partial read was deleted, no orphan directory exists on the volume.
+
+#### A1: question-side LoRA (Phase 1) - negative at every size, placement stays `full`
+
+| trial (v7 recipe, `lora_placement question`) | transfer-v4 dev | vs same-seed full placement | `deadline` raw | MMLU | held-out pairs | coverage at ≤ 5 % (served) |
+|---|---|---|---|---|---|---|
+| 4B seed 1 (`r6-a1-4b/00-trial-0`; ref `q35-4b/01-trial-1` 0.800) | 0.741 | **−6.0 pp [−8.8, −3.2]** | 0.50 (full 0.53, base 0.68) | 0.650 (0.713) | 0.53 (0.75) | 0.329 (0.518) |
+| 4B seed 2 (`r6-a1-4b/01-trial-1`; ref `q35-4b-s23/00-trial-0` 0.794) | 0.761 | **−3.4 pp [−6.0, −0.9]** | 0.53 (0.55) | 0.700 (0.700) | 0.56 (0.78) | 0.377 (0.549) |
+| 9B seed 1 (`r6-a1-9b/00-trial-0`; ref `q35-9b/01-trial-1` 0.812) | 0.777 | **−3.5 pp [−6.1, −1.1]** | 0.75 (0.72, base 0.82) | 0.713 (0.738) | 0.59 (0.80) | 0.361 (0.524) |
+| 27B trial C (`r6-27b/02-trial-2`, lr 5e-5, 1 epoch; vs trial A) | 0.840 | −0.9 pp vs A | 0.97 (A 0.975) | 0.850 (0.863) | 0.89 (0.92) | 0.645 (0.720) |
+
+Gate (deadline ≥ 0.70 at 4B / ≥ 0.80 at 9B with transfer within 1 pp): **not met anywhere**. Reading the state without the adapter does not protect the base's date arithmetic (4B 0.50 / 0.53, 9B 0.75), and the held-out minimal pairs collapse (0.75-0.80 → 0.53-0.59): the adapter needs to shape how the document is read. The erosion is not document-side. The implementation (gated `lora_B` outputs via a decoder-layer kwarg, `kev/model.py`, bit-identical default path, checkpoint-recompute test) is kept on this branch for the record; PLAN_27b A1 is answered.
+
+#### B1: Kev-27B (Qwen3.8-27B, post-trained; human override of the A2 MMLU-Pro gate recorded above)
+
+| trial (`r6-27b`, 1 epoch, bf16 weights) | transfer-v4 dev | vs Kev-9B 0.822 (paired) | MMLU-Pro (v9) | `deadline` | MMLU | pairs | unknowable ≥ 0.9 | cov ≤ 5 % / Brier (served) | worst task vs 9B | externals SemIf / scienthoon / WANLI-v2 / TypeSafe (9B: 0.910 / 0.755 / 0.740 / 0.820) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A lr 5e-5 (`00-trial-0`, 110 min) | **0.849** | **+2.7 pp [−0.15, +5.6]** | **0.655** | 0.975 | 0.863 | 0.92 | 0.036 | **0.720 / 0.215** | `composition_held_conditional` −6.2 pp (2 of 32) | **0.951 / 0.773 / 0.751 / 0.843** |
+| B lr 2e-5 (`01-trial-1`, 114 min) | 0.840 | +1.8 pp [−1.2, +4.7] | 0.615 | 1.00 | 0.838 | 0.92 | 0.164 | 0.660 / 0.235 | conditional −9.4 pp | 0.972 / 0.742 / 0.742 / 0.865 |
+| C lr 5e-5, question-side (`02-trial-2`, 124 min) | 0.840 | +1.8 pp [−1.4, +4.9] | not read | 0.97 | 0.850 | 0.89 | not read | 0.645 / 0.239 | conditional −21.9 pp | not read |
+
+Rule: accuracy ≥ 0.842 with paired lower bound > 0, MMLU-Pro ≥ 0.65, no task > 3 pp below Kev-9B, pairs ≥ 0.75, unknowable ≤ 0.05. **Trial A meets four of six** and misses the paired lower bound by 0.15 pp and the per-task floor by two questions on a 32-question task; B and C miss more. **Not a candidate by the registered rule; no fresh-panel or locked read.** It is the first Kev to reach Jev's calibration (coverage 0.72 vs 0.70, Brier 0.215 vs 0.211 on this suite), to keep the base's date arithmetic through training (0.975 raw), and to beat Kev-9B on every external suite, after one epoch. Every 27B trial fails the trial-level `isolation_and_packing` gate, as every bf16-weights trial does (the 1e-3 exactness check is an fp32 check); results are read from the same rows as the other trials. Reports: `runs/r6-27b/*/result.json`, `runs/r6-27b-{A,B}-{v9,semif,scienthoon,wanli2,typesafe}`.
+
+#### Phase 2: delta hill-climb (selection sets; nothing passed rules 1-3 at any size, so rule 4 selected no confirmation candidate)
+
+Every arm below is a one-epoch delta from the released checkpoint (replay 2000 unless stated; seed 1 unless stated) served at its own development-fitted temperature. Intervals are candidate minus parent (paired, record-clustered, 2,000 resamples); long = buried questions of `longstate-v2` development (591); short = `transfer-v4` development (656) read inside the trial; externals on their own questions (144 / 900 / 1,002 / 89) with margins −3 / −2 / −2 / −3 pp on the lower bound; pooled over 2,135 external questions. Reports: `runs/r6-readout/{9b,4b,08b}.json` (`scripts/round6_readout.py`), reads under `runs/r6-<size>-<arm>-<suite>`, trials under `runs/r6-<size>[-r2]/`.
+
+**9b** (parent runs/night2-9b-du/00-trial-0, T 2.30; pp unless stated; every interval is candidate minus parent)
+
+| arm | long (selection panel) | short acc | short Brier | confident errors | SemIf | scienthoon | WANLI-v2 | TypeSafe | pooled external | verdict (failed criteria) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| C9 | +16.8 [+12.3, +20.9] | +0.0 [-1.4, +1.5] | -0.0145 [-0.0315, -0.0007] | -1.8 [-3.4, -0.6] | +2.1 [+0.0, +4.9] | -0.2 [-1.3, +0.9] | -2.0 [-3.5, -0.4] | +2.2 [+0.0, +6.1] | -0.8 [-1.7, +0.0] | fails: short acc lower, WANLI-v2, pooled ext. point, pooled ext. lower  |
+| soft-nomnli | +16.6 [+12.1, +21.0] | +0.3 [-1.4, +2.0] | -0.0104 [-0.0235, +0.0015] | -1.1 [-2.1, -0.2] | +0.0 [-2.8, +2.8] | +0.3 [-0.6, +1.4] | +0.3 [-1.0, +1.6] | +2.2 [+0.0, +6.1] | +0.4 [-0.4, +1.2] | fails: short acc lower  |
+| soft-lam03 | +17.9 [+13.6, +22.2] | +0.0 [-1.7, +1.7] | -0.0145 [-0.0328, +0.0016] | -1.5 [-3.0, -0.3] | +0.7 [-1.4, +2.8] | -0.7 [-1.6, +0.2] | -1.2 [-2.5, +0.2] | +2.2 [+0.0, +6.1] | -0.7 [-1.5, +0.1] | fails: short acc lower, WANLI-v2, pooled ext. point, pooled ext. lower  |
+| soft-thr08 | +20.0 [+15.3, +24.3] | +0.5 [-0.6, +1.5] | -0.0140 [-0.0235, -0.0048] | -1.5 [-2.6, -0.5] | +2.8 [+0.0, +6.2] | -0.9 [-1.9, +0.0] | -1.6 [-3.1, +0.0] | +1.1 [+0.0, +4.2] | -0.9 [-1.8, -0.0] | fails: WANLI-v2, pooled ext. point, pooled ext. lower  |
+| soft-du | +19.1 [+14.8, +23.1] | +1.1 [-0.5, +2.7] | -0.0120 [-0.0273, +0.0025] | -1.1 [-2.4, +0.3] | +2.1 [-0.7, +4.9] | -1.9 [-3.1, -0.8] | -2.1 [-3.7, -0.5] | +1.1 [-2.4, +5.3] | -1.6 [-2.5, -0.7] | fails: scienthoon, WANLI-v2, pooled ext. point, pooled ext. lower  |
+| soft-longmix3 | +17.9 [+13.1, +22.6] | +0.2 [-1.5, +1.8] | -0.0121 [-0.0240, -0.0008] | -1.1 [-2.1, +0.0] | unread | unread | unread | unread | unread | incomplete |
+| combined-replay6000 | +18.3 [+13.6, +22.6] | +0.6 [-0.8, +2.1] | -0.0202 [-0.0348, -0.0086] | -1.8 [-3.2, -0.6] | +1.4 [-1.4, +4.2] | +0.5 [-0.6, +1.5] | -2.1 [-3.8, -0.3] | +3.4 [+0.0, +7.9] | -0.6 [-1.5, +0.4] | fails: WANLI-v2, pooled ext. point, pooled ext. lower  |
+| combined-lr1e-05 | +15.6 [+11.3, +20.0] | +0.3 [-0.8, +1.2] | -0.0135 [-0.0222, -0.0052] | -1.7 [-2.7, -0.8] | +2.1 [-0.7, +4.9] | +1.4 [+0.2, +2.5] | -1.4 [-2.7, +0.0] | +1.1 [+0.0, +4.2] | +0.1 [-0.8, +0.9] | fails: WANLI-v2  |
+| soft-nomnli-thr08 | +20.1 [+15.6, +24.7] | +0.3 [-0.8, +1.4] | -0.0119 [-0.0216, -0.0019] | -1.7 [-3.0, -0.6] | +0.7 [-1.4, +2.8] | -0.5 [-1.5, +0.6] | -0.5 [-1.7, +0.7] | +1.1 [+0.0, +4.2] | -0.3 [-1.0, +0.4] | fails: pooled ext. point, pooled ext. lower  |
+| soft-nomnli-seed2 | +18.6 [+14.4, +22.7] | -0.8 [-2.3, +0.6] | -0.0058 [-0.0190, +0.0079] | -0.9 [-2.0, +0.0] | unread | unread | unread | unread | unread | incomplete |
+| soft-nomnli-thr08-seed2 | +18.4 [+14.0, +22.9] | -0.2 [-1.7, +1.2] | -0.0094 [-0.0191, +0.0007] | -1.2 [-2.1, -0.3] | unread | unread | unread | unread | unread | incomplete |
+
+ranking: none
+
+**4b** (parent runs/night2-4b-du/00-trial-0, T 2.14; pp unless stated; every interval is candidate minus parent)
+
+| arm | long (selection panel) | short acc | short Brier | confident errors | SemIf | scienthoon | WANLI-v2 | TypeSafe | pooled external | verdict (failed criteria) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| C4 | +20.0 [+15.5, +24.4] | +1.4 [+0.0, +2.9] | -0.0149 [-0.0243, -0.0062] | -0.6 [-1.5, +0.3] | +0.0 [-2.8, +2.8] | -2.4 [-4.0, -0.8] | -0.8 [-2.8, +1.2] | -5.6 [-12.0, +0.0] | -1.6 [-2.8, -0.5] | fails: scienthoon, WANLI-v2, typesafe, pooled ext. point, pooled ext. lower  |
+| soft-half | +16.9 [+12.5, +21.5] | +1.5 [+0.0, +3.0] | -0.0131 [-0.0217, -0.0046] | -1.1 [-2.0, -0.3] | +0.0 [-3.5, +3.5] | -4.1 [-6.0, -2.4] | -0.6 [-2.5, +1.2] | -5.6 [-9.8, -1.4] | -2.2 [-3.5, -1.1] | fails: semif, scienthoon, WANLI-v2, typesafe, pooled ext. point, pooled ext. lower  |
+| soft-nomnli | +20.3 [+16.0, +24.7] | +1.5 [+0.0, +3.0] | -0.0116 [-0.0203, -0.0028] | -0.3 [-1.1, +0.5] | +0.7 [+0.0, +2.1] | -1.5 [-3.0, +0.0] | +0.8 [-0.8, +2.3] | -3.4 [-9.7, +2.1] | -0.3 [-1.3, +0.6] | fails: scienthoon, typesafe, pooled ext. point, pooled ext. lower  |
+| soft-du | +20.3 [+15.9, +24.8] | +2.4 [+0.8, +4.4] | -0.0091 [-0.0225, +0.0030] | +0.2 [-1.1, +1.4] | +0.0 [-3.5, +3.5] | -1.7 [-3.6, -0.1] | +0.5 [-1.1, +2.2] | +1.1 [-2.5, +4.6] | -0.4 [-1.5, +0.6] | fails: conf. errors upper, semif, scienthoon, pooled ext. point, pooled ext. lower  |
+| soft-longmix3 | +19.8 [+15.2, +24.5] | +0.6 [-1.1, +2.4] | -0.0071 [-0.0162, +0.0016] | -0.6 [-1.5, +0.3] | unread | unread | unread | unread | unread | incomplete |
+| combined-replay6000 | +20.8 [+16.3, +25.3] | +1.5 [-0.2, +3.4] | -0.0125 [-0.0210, -0.0047] | -0.2 [-0.9, +0.6] | +0.7 [-3.5, +4.9] | -1.5 [-3.1, +0.1] | +0.9 [-1.0, +2.6] | -3.4 [-9.8, +1.3] | -0.3 [-1.5, +0.8] | fails: semif, scienthoon, typesafe, pooled ext. point, pooled ext. lower  |
+| combined-lr1e-05 | +14.0 [+9.6, +18.4] | +1.1 [-0.2, +2.4] | -0.0156 [-0.0238, -0.0077] | -0.9 [-1.7, -0.2] | -2.8 [-6.2, +0.0] | -2.7 [-4.5, -1.1] | -0.1 [-1.7, +1.5] | -2.2 [-5.6, +0.0] | -1.5 [-2.5, -0.5] | fails: semif, scienthoon, typesafe, pooled ext. point, pooled ext. lower  |
+| soft-half-nomnli | +13.5 [+9.2, +17.9] | +1.8 [+0.2, +3.7] | -0.0184 [-0.0293, -0.0090] | -0.2 [-0.6, +0.3] | +0.0 [-3.5, +3.5] | -2.4 [-4.1, -0.7] | +1.0 [-0.6, +2.5] | -5.6 [-10.8, -1.7] | -0.8 [-1.8, +0.2] | fails: semif, scienthoon, typesafe, pooled ext. point, pooled ext. lower  |
+| soft-half-seed2 | +12.9 [+8.7, +17.0] | +1.2 [-0.2, +2.6] | -0.0087 [-0.0191, +0.0020] | -1.2 [-2.1, -0.3] | +1.4 [-2.1, +4.9] | -1.7 [-3.6, +0.0] | +0.5 [-1.1, +2.1] | +0.0 [-3.8, +2.7] | -0.4 [-1.5, +0.7] | fails: scienthoon, typesafe, pooled ext. point, pooled ext. lower  |
+| soft-nomnli-thr08 | +19.0 [+14.5, +23.4] | +1.2 [-0.3, +3.0] | -0.0088 [-0.0192, +0.0008] | +0.0 [-0.6, +0.6] | -1.4 [-4.2, +1.4] | -3.7 [-5.6, -1.8] | +1.0 [-0.6, +2.5] | +1.1 [-4.6, +6.4] | -1.1 [-2.2, +0.0] | fails: semif, scienthoon, typesafe, pooled ext. point, pooled ext. lower  |
+
+ranking: none
+
+**08b** (parent runs/night2-08b-du2/00-trial-0, T 2.41; pp unless stated; every interval is candidate minus parent)
+
+| arm | long (selection panel) | short acc | short Brier | confident errors | SemIf | scienthoon | WANLI-v2 | TypeSafe | pooled external | verdict (failed criteria) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| C08 | +10.3 [+5.6, +14.8] | +0.2 [-1.8, +2.1] | -0.0013 [-0.0182, +0.0148] | +1.7 [+0.3, +3.4] | +8.3 [+4.2, +12.5] | -5.7 [-7.4, -4.0] | -1.1 [-2.5, +0.4] | -1.1 [-11.8, +8.5] | -2.4 [-3.5, -1.2] | fails: short acc lower, short Brier upper, conf. errors upper, scienthoon, WANLI-v2, typesafe, pooled ext. point, pooled ext. lower  |
+| combined | +8.6 [+4.2, +13.1] | +0.0 [-2.0, +2.1] | -0.0051 [-0.0182, +0.0075] | +1.4 [+0.0, +3.0] | unread | unread | unread | unread | unread | incomplete |
+| combined-replay6000 | +12.0 [+7.1, +17.0] | -1.1 [-3.2, +1.1] | +0.0091 [-0.0054, +0.0244] | +0.3 [-0.3, +0.9] | unread | unread | unread | unread | unread | incomplete |
+| soft-half-nomnli | unread | -1.2 [-2.9, +0.5] | +0.0024 [-0.0098, +0.0143] | +1.4 [+0.0, +3.0] | unread | unread | unread | unread | unread | incomplete |
+
+ranking: none
+
+**What the deltas established.**
+- **The WANLI dip is the MNLI soft targets.** On 1,002 fresh WANLI pairs (`wanli-v2`), the round-5 incumbent is −2.0 pp [−3.5, −0.4] at 9B; restoring hard labels on the 150 MNLI records (`soft-nomnli`) gives +0.3 pp [−1.0, +1.6] with the long-state gain intact (+16.6 pp) and no other external moving. Same direction at 4B (+0.8 vs −0.8). The round-5 hypothesis is confirmed; `soft-nomnli` should be the base of every later soft-target set.
+- **Threshold 0.8 is the best soft-target rule for long states**: `soft-thr08` and `soft-nomnli-thr08` give the largest long-state gains at 9B (+20.0 / +20.1 pp) and at 4B (+19.0) while passing the short guard; lam 0.3 does nothing the incumbent did not.
+- **Nothing passed every guard, and the guards say why.** At 9B the closest arms fail one criterion each: `soft-nomnli-thr08` the pooled external point estimate (−0.3 pp [−1.0, +0.4]), `soft-nomnli` the short-state accuracy lower bound (−1.4 vs −1.0 with a +0.3 point estimate), `combined-lr1e-05` the WANLI-v2 lower bound (−2.7 vs −2.0). With 656 short-state questions the accuracy interval is ±1.7 pp, so the −1 pp lower bound needs a point estimate of about +0.7; with 89 TypeSafe rows a −3 pp lower bound needs about +3. These guards cannot be met by a model that is merely not worse, which is what a calibration-and-long-state delta is on short states.
+- **At 4B, long-state records cost ticket routing in every arm** (scienthoon −1.5 to −4.1 pp, lower bounds below −2 in 9 of 9 arms with a read), and TypeSafe's 89 rows swing ±6 pp. No 4B delta can pass rule 3 as written. The 0.8B arms all fail the short guard (confident errors rise +1.4 to +1.7 pp).
+- **Do not fold the night-2 delta data back in** (`soft-du`): scienthoon −1.9 and WANLI −2.1 at 9B; at 4B confident errors rise.
+- Seed variance at 9B is about ±1 pp on short accuracy (`soft-nomnli` seeds 1 / 2: +0.3 / −0.8; `soft-nomnli-thr08`: +0.3 / −0.2) and ±2 pp on the long panel; a one-seed lead of a point is noise, as round 2 found.
+
+**Confirmations and locked reads:** none. `evals/round6/transfer-r6/test.jsonl`, `evals/round6/longstate-v3/development.jsonl` and the locked tests are **unread** and available for the next registered candidate. `wanli-v2` has been read for every arm above and is a selection set now.
+
+**Incidents.** (1) Read timeouts set for the slowest job type inflated read bounds (above). (2) `modal_app.py::pull` refuses a study directory that already exists locally, so later-finishing trials of a partly pulled study were fetched with `modal volume get` per trial (`/tmp/fetch_trial.sh`, not committed); `pull` should learn to add missing trials. (3) The A1 and 27B trial bounds exceeded the Phase-1 cap by $9 (timeouts follow rule 9's headroom). No timeouts, no relaunches, no orphans.
+
+**Next steps (at most three, with the evidence):**
+1. **Kev-27B, two more seeds at lr 5e-5 with 2 epochs** (raise the timeout cap to 28,800 s or use a B200; ~$50 each). Trial A missed the rule by 0.15 pp on the paired lower bound and by two questions on a 32-question task after one epoch; its calibration, date arithmetic, MMLU-Pro and externals already clear Kev-9B. If a 2-epoch seed passes the registered 27B rule, read `transfer-r6` and then `kev-27b-r6` locked, in that order.
+2. **9B candidate `soft-nomnli-thr08`** (`runs/r6-9b-r2/00-trial-0`): long +20.1 pp, short Brier −0.012 and confident errors −1.7 pp with intervals excluding zero, every external within its margin, pooled −0.3 pp [−1.0, +0.4]. It failed only the pooled-external *point* estimate. Whether a point-estimate requirement on 2,135 questions is the right guard is Jared's call; if the rule is changed to the lower-bound-only form, that change is registered first and the fresh panels (`longstate-v3`, `transfer-r6`) are read once for this trial and its parent with `scripts/round6_confirm.py`, then the locked read.
+3. **4B needs different long-state data, not different knobs.** Every 4B long-state arm costs scienthoon 1.5-4 pp; the delta knobs (replay, lr, half the records, MNLI, threshold) move it by a point. Either accept that trade-off explicitly for a long-document 4B, or build long-state records whose primaries are ticket-like (scienthoon-style routing) so the two skills are trained together, and size TypeSafe's guard to its 89 rows.
+
 ### Release confirmation: soft-target Kev-9B (registered 2026-09-22, before any read below)
 
 4.9 missed its registered coverage gate, but at 9B it improved Brier and halved confident errors with intervals that exclude zero, on the same development items used to select it. This registers one confirmatory read on data never scored by any Kev model, and the rule that decides a release, written before the numbers exist.
@@ -911,11 +1005,11 @@ Relevant code: [suite builder](kev/study_v3.py), [rule generator](kev/compositio
 
 Maintained by `kev.autoresearch`; full table in [`runs/leaderboard.md`](runs/leaderboard.md). Selection uses development partitions only.
 
-- **Qwen3-0.6B-Base** incumbent (v4 suites): transfer 0.620, dev 0.801, seeds [2], knobs `{"epochs": 2, "lr": 0.0001, "p_none_pair": 0.25}`
-- **Qwen3-4B-Base** incumbent (v4 suites): transfer 0.775, dev 0.858, seeds [0], knobs `{"epochs": 2, "lr": 5e-05, "p_none_pair": 0.25}`
-- **Qwen3-8B-Base** incumbent (v4 suites): transfer 0.796, dev 0.863, seeds [0], knobs `{"epochs": 2, "lr": 5e-05, "p_none_pair": 0.25}`
+- **Qwen3-0.6B-Base** incumbent (v4 suites): transfer 0.596, dev 0.804, seeds [0, 1, 2], knobs `{"epochs": 2, "p_none_pair": 0.25}`
+- **Qwen3-4B-Base** incumbent (v4 suites): transfer 0.767, dev 0.843, seeds [0], knobs `{"epochs": 2, "lr": 3e-05, "p_none_pair": 0.25, "perm_kl": 0.2}`
+- **Qwen3-8B-Base** incumbent (v4 suites): transfer 0.785, dev 0.864, seeds [0, 1], knobs `{"epochs": 2, "lr": 5e-05, "p_none_pair": 0.25}`
 
-| round | base | trials | best transfer | best knobs | incumbent after | spend |
-|---|---|---|---|---|---|---|
-| auto-06b-r1 | Qwen3-0.6B-Base | 8/8 | 0.596 | `{"epochs": 2, "accum": 1, "perm_kl": 0.5, "p_none_pair": 0.25}` | 0.592 | $9.82 |
-| auto-4b-r1 | Qwen3-4B-Base | 6/6 | 0.767 | `{"epochs": 2, "lr": 3e-05, "accum": 2, "perm_kl": 0.2, "p_none_pair": 0.25, "lora_targets": "all"}` | 0.767 | $147.26 |
+| round | base | trials | best transfer | best knobs | challenge (macro delta, 95% CI) | incumbent after | spend |
+|---|---|---|---|---|---|---|---|
+| auto-06b-r1 | Qwen3-0.6B-Base | 8/8 | 0.596 | `{"epochs": 2, "p_none_pair": 0.25, "perm_kl": 0.5}` |  | 0.592 | $9.82 |
+| auto-4b-r1 | Qwen3-4B-Base | 6/6 | 0.767 | `{"epochs": 2, "lr": 3e-05, "p_none_pair": 0.25, "perm_kl": 0.2}` |  | 0.767 | $147.26 |

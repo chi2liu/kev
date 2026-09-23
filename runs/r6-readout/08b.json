@@ -144,7 +144,14 @@
         "confident_error_rate": 0.01676829268292683,
         "coverage_at_5pct_error": 0.16615853658536586
       },
-      "long": "unread",
+      "long": {
+        "delta": 0.0862944162436548,
+        "ci95": [
+          0.04173088365268527,
+          0.13081013182663728
+        ]
+      },
+      "long_acc": 0.5313028764805414,
       "externals": {
         "semif": "unread",
         "scienthoon": "unread",
@@ -154,6 +161,8 @@
       "pooled_external": "unread",
       "unknowable_share": "unread",
       "criteria": {
+        "1_long_lower_above_0": true,
+        "1_long_point_at_least_5pp": true,
         "2_short_acc_lower_at_least_minus_1pp": false,
         "2_short_brier_upper_at_most_0.01": true,
         "2_short_confident_errors_upper_at_most_1pp": false
@@ -194,6 +203,65 @@
         "confident_error_rate": 0.006097560975609756,
         "coverage_at_5pct_error": 0.20884146341463414
       },
+      "long": {
+        "delta": 0.12013536379018613,
+        "ci95": [
+          0.07105441121363994,
+          0.1696227254152543
+        ]
+      },
+      "long_acc": 0.5651438240270727,
+      "externals": {
+        "semif": "unread",
+        "scienthoon": "unread",
+        "wanli2": "unread",
+        "typesafe": "unread"
+      },
+      "pooled_external": "unread",
+      "unknowable_share": "unread",
+      "criteria": {
+        "1_long_lower_above_0": true,
+        "1_long_point_at_least_5pp": true,
+        "2_short_acc_lower_at_least_minus_1pp": false,
+        "2_short_brier_upper_at_most_0.01": false,
+        "2_short_confident_errors_upper_at_most_1pp": true
+      },
+      "complete": false,
+      "passed": false
+    },
+    {
+      "arm": "soft-half-nomnli",
+      "trial": "runs/r6-08b-r2/00-trial-0",
+      "temperature": 1.2599210498948732,
+      "short": {
+        "acc": {
+          "delta": -0.012195121951219523,
+          "ci95": [
+            -0.02896341463414631,
+            0.004573170731707377
+          ]
+        },
+        "brier": {
+          "delta": 0.0023686978542781234,
+          "ci95": [
+            -0.009792843376252379,
+            0.01426475147694005
+          ]
+        },
+        "confident_error_rate": {
+          "delta": 0.013719512195121953,
+          "ci95": [
+            0.0,
+            0.03048780487804878
+          ]
+        }
+      },
+      "short_metrics": {
+        "acc": 0.6402439024390244,
+        "brier": 0.43280916416390225,
+        "confident_error_rate": 0.01676829268292683,
+        "coverage_at_5pct_error": 0.15548780487804878
+      },
       "long": "unread",
       "externals": {
         "semif": "unread",
@@ -206,7 +274,7 @@
       "criteria": {
         "2_short_acc_lower_at_least_minus_1pp": false,
         "2_short_brier_upper_at_most_0.01": false,
-        "2_short_confident_errors_upper_at_most_1pp": true
+        "2_short_confident_errors_upper_at_most_1pp": false
       },
       "complete": false,
       "passed": false

@@ -851,21 +851,79 @@
         "confident_error_rate": 0.022865853658536585,
         "coverage_at_5pct_error": 0.5548780487804879
       },
-      "long": "unread",
-      "externals": {
-        "semif": "unread",
-        "scienthoon": "unread",
-        "wanli2": "unread",
-        "typesafe": "unread"
+      "long": {
+        "delta": 0.20135363790186123,
+        "ci95": [
+          0.15608797069082625,
+          0.24669490321383417
+        ]
       },
-      "pooled_external": "unread",
-      "unknowable_share": "unread",
+      "long_acc": 0.7732656514382402,
+      "externals": {
+        "semif": {
+          "delta": 0.00694444444444442,
+          "ci95": [
+            -0.01388888888888895,
+            0.02777777777777779
+          ],
+          "n": 144,
+          "margin": -0.03,
+          "acc": 0.9166666666666666
+        },
+        "scienthoon": {
+          "delta": -0.004581901489117968,
+          "ci95": [
+            -0.014891179839633395,
+            0.00572737686139746
+          ],
+          "n": 873,
+          "margin": -0.02,
+          "acc": 0.7502863688430699
+        },
+        "wanli2": {
+          "delta": -0.004990019960079861,
+          "ci95": [
+            -0.01696606786427146,
+            0.007010978043912111
+          ],
+          "n": 1002,
+          "margin": -0.02,
+          "acc": 0.7345309381237525
+        },
+        "typesafe": {
+          "delta": 0.011235955056179803,
+          "ci95": [
+            0.0,
+            0.04210896960711627
+          ],
+          "n": 89,
+          "margin": -0.03,
+          "acc": 0.8314606741573034
+        }
+      },
+      "pooled_external": {
+        "delta": -0.0033206831119544367,
+        "ci95": [
+          -0.010461370259422778,
+          0.0037791112936293773
+        ]
+      },
+      "unknowable_share": 0.0,
       "criteria": {
+        "1_long_lower_above_0": true,
+        "1_long_point_at_least_5pp": true,
         "2_short_acc_lower_at_least_minus_1pp": true,
         "2_short_brier_upper_at_most_0.01": true,
-        "2_short_confident_errors_upper_at_most_1pp": true
+        "2_short_confident_errors_upper_at_most_1pp": true,
+        "3_semif_lower_at_least_margin": true,
+        "3_scienthoon_lower_at_least_margin": true,
+        "3_wanli2_lower_at_least_margin": true,
+        "3_typesafe_lower_at_least_margin": true,
+        "3_pooled_point_at_least_0": false,
+        "3_pooled_lower_at_least_minus_1pp": false,
+        "3_unknowable_share_at_most_0.05": true
       },
-      "complete": false,
+      "complete": true,
       "passed": false
     },
     {
@@ -901,7 +959,14 @@
         "confident_error_rate": 0.03048780487804878,
         "coverage_at_5pct_error": 0.5045731707317073
       },
-      "long": "unread",
+      "long": {
+        "delta": 0.1861252115059222,
+        "ci95": [
+          0.1443478260869565,
+          0.22660606368391653
+        ]
+      },
+      "long_acc": 0.7580372250423012,
       "externals": {
         "semif": "unread",
         "scienthoon": "unread",
@@ -911,6 +976,8 @@
       "pooled_external": "unread",
       "unknowable_share": "unread",
       "criteria": {
+        "1_long_lower_above_0": true,
+        "1_long_point_at_least_5pp": true,
         "2_short_acc_lower_at_least_minus_1pp": false,
         "2_short_brier_upper_at_most_0.01": true,
         "2_short_confident_errors_upper_at_most_1pp": true
@@ -951,7 +1018,14 @@
         "confident_error_rate": 0.027439024390243903,
         "coverage_at_5pct_error": 0.5564024390243902
       },
-      "long": "unread",
+      "long": {
+        "delta": 0.18443316412859567,
+        "ci95": [
+          0.14035009815836216,
+          0.22858363858363848
+        ]
+      },
+      "long_acc": 0.7563451776649747,
       "externals": {
         "semif": "unread",
         "scienthoon": "unread",
@@ -961,6 +1035,8 @@
       "pooled_external": "unread",
       "unknowable_share": "unread",
       "criteria": {
+        "1_long_lower_above_0": true,
+        "1_long_point_at_least_5pp": true,
         "2_short_acc_lower_at_least_minus_1pp": false,
         "2_short_brier_upper_at_most_0.01": true,
         "2_short_confident_errors_upper_at_most_1pp": true
