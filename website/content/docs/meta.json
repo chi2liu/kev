@@ -6,16 +6,16 @@
     "quickstart",
     "choosing-a-model",
     "---Concepts---",
-    "concepts",
+    "...concepts",
     "---Build---",
-    "guides",
+    "...guides",
     "---Integrations---",
-    "integrations",
+    "...integrations",
     "---Deploy---",
-    "deploy",
+    "...deploy",
     "---Benchmarks---",
-    "benchmarks",
+    "...benchmarks",
     "---Architecture (for researchers)---",
-    "architecture"
+    "...architecture"
   ]
 }
