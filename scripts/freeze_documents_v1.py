@@ -42,7 +42,7 @@ def vote(ans, model, rid, qid):
 
 
 def strip(q):
-    return {k: v for k, v in q.items() if k != "src"}
+    return dict(q)   # kept whole: kev.data.materialize needs each question's "src"
 
 
 def train_split():
@@ -148,11 +148,20 @@ def main():
         files[f"{split}.jsonl"] = {"sha256": hashlib.sha256((out / f"{split}.jsonl").read_bytes()).hexdigest(), "records": len(recs), "questions": sum(len(r["questions"]) for r in recs),
                                    "by_length": dict(Counter(r["_meta"]["length_bucket"] for r in recs))}
     spot_check(splits["test"])
+    reviews = [json.loads(l) for l in open(WORK / "spot_check_reviews.jsonl")]
+    sample = {json.loads(l)["id"]: json.loads(l)["proposed_label"] for l in open(WORK / "spot_check.jsonl")}
+    if {r["id"] for r in reviews} != set(sample) or any(r["proposed_label"] != sample[r["id"]] for r in reviews): raise SystemExit("spot-check reviews do not match the sample")
+    agreed = sum(r["verdict"] == "accept" for r in reviews)
+    if agreed < 47: raise SystemExit(f"spot check {agreed}/50 is below the registered 47/50; not frozen")
+    human = {"reviewer": "Jared Palmer", "tool": "tools/review", "sample": "50 test questions, seed documents-v1-spot-check", "agreement": f"{agreed}/50",
+             "disagreements": [{"id": r["id"], "frozen": r["proposed_label"], "reviewer": r["label"], "verdict": r["verdict"]} for r in reviews if r["verdict"] != "accept"],
+             "reviews_sha256": hashlib.sha256((WORK / "spot_check_reviews.jsonl").read_bytes()).hexdigest()}
     build = json.load(open(WORK / "candidates" / "build.json"))
     write_json(out / "manifest.json", {"version": "documents-v1", "partitions": ["train", "development", "test"], "locked": ["test"], "files": files,
                                        "source": build["repo"] + "@" + build["revision"], "rights": "US CFPB consumer complaint database, US government work (public domain)",
                                        "label_protocol": "PLAN_27b B2 revised: train = native label kept where both open-weight teachers agree; development/test = native label verified by a unanimous three-judge panel or adjudicated",
-                                       "teachers": TEACHERS, "judges": JUDGES, "adjudicators": "two independent Devin subagents per item (Claude family); decided only on agreement", "label_report": report, "spot_check": "pending (runs/documents-v1-work/spot_check.jsonl, 50 test items)",
+                                       "teachers": TEACHERS, "judges": JUDGES, "adjudicators": "two independent Devin subagents per item (Claude family); decided only on agreement", "label_report": report, "spot_check": human,
+                                       "description": f"AI-adjudicated, human spot-checked ({human['agreement']} agreement)",
                                        "trainable_sources": ["cfpb"], "candidates_build": build})
     print(f"frozen {out}; spot-check sample -> {WORK / 'spot_check.jsonl'}")
 
