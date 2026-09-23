@@ -1,0 +1,639 @@
+{
+  "objective": -0.721258821966573,
+  "paired_flip": null,
+  "unknowable": null,
+  "clean": {
+    "n": 920,
+    "nll": 0.4735646238550216,
+    "acc": 0.825,
+    "ece": 0.017859286366493227,
+    "brier": 0.2484010511332632,
+    "mean_conf": 0.8184422233784768,
+    "confident_error_rate": 0.009782608695652175,
+    "coverage_at_0_9": 0.4902173913043478,
+    "accuracy_at_0_9": 0.9800443458980045,
+    "coverage_at_5pct_error": 0.625,
+    "coverage_at_1pct_error": 0.44130434782608696,
+    "aurc": 0.04709062877173995,
+    "error_rate_at_0_9": 0.019955654101995565,
+    "confidence_bias": -0.006557776621523126,
+    "top_bins": {
+      "0.9": {
+        "n": 451,
+        "errors": 9,
+        "error_rate": 0.019955654101995565
+      },
+      "0.95": {
+        "n": 346,
+        "errors": 3,
+        "error_rate": 0.008670520231213872
+      },
+      "0.99": {
+        "n": 150,
+        "errors": 1,
+        "error_rate": 0.006666666666666667
+      }
+    },
+    "selective": {
+      "0.5": {
+        "coverage": 0.5,
+        "accuracy": 0.9760869565217392,
+        "confidence_cutoff": 0.8944552685950031
+      },
+      "0.8": {
+        "coverage": 0.8,
+        "accuracy": 0.9035326086956522,
+        "confidence_cutoff": 0.632449844661563
+      }
+    }
+  },
+  "tasks": {
+    "cfpb_issue_bank_account": {
+      "n": 46,
+      "nll": 0.8320193163764708,
+      "acc": 0.6956521739130435,
+      "ece": 0.15883020052318822,
+      "brier": 0.46859804645180747,
+      "mean_conf": 0.6342649915256097,
+      "confident_error_rate": 0.0,
+      "coverage_at_0_9": 0.06521739130434782,
+      "accuracy_at_0_9": 1.0,
+      "coverage_at_5pct_error": 0.13043478260869565,
+      "coverage_at_1pct_error": 0.13043478260869565,
+      "aurc": 0.21736956395519363,
+      "error_rate_at_0_9": 0.0,
+      "confidence_bias": -0.06138718238743379,
+      "top_bins": {
+        "0.9": {
+          "n": 3,
+          "errors": 0,
+          "error_rate": 0.0
+        },
+        "0.95": {
+          "n": 1,
+          "errors": 0,
+          "error_rate": 0.0
+        },
+        "0.99": {
+          "n": 0,
+          "errors": 0,
+          "error_rate": null
+        }
+      },
+      "selective": {
+        "0.5": {
+          "coverage": 0.5,
+          "accuracy": 0.7391304347826086,
+          "confidence_cutoff": 0.609190748993878
+        },
+        "0.8": {
+          "coverage": 0.8043478260869565,
+          "accuracy": 0.6756756756756757,
+          "confidence_cutoff": 0.4965326855406075
+        }
+      }
+    },
+    "cfpb_issue_card": {
+      "n": 37,
+      "nll": 0.32206016565559087,
+      "acc": 0.8648648648648649,
+      "ece": 0.10147427411345383,
+      "brier": 0.17685279931715742,
+      "mean_conf": 0.8269220652225828,
+      "confident_error_rate": 0.0,
+      "coverage_at_0_9": 0.5675675675675675,
+      "accuracy_at_0_9": 1.0,
+      "coverage_at_5pct_error": 0.7567567567567568,
+      "coverage_at_1pct_error": 0.7297297297297297,
+      "aurc": 0.02264970119495374,
+      "error_rate_at_0_9": 0.0,
+      "confidence_bias": -0.03794279964228209,
+      "top_bins": {
+        "0.9": {
+          "n": 21,
+          "errors": 0,
+          "error_rate": 0.0
+        },
+        "0.95": {
+          "n": 14,
+          "errors": 0,
+          "error_rate": 0.0
+        },
+        "0.99": {
+          "n": 5,
+          "errors": 0,
+          "error_rate": 0.0
+        }
+      },
+      "selective": {
+        "0.5": {
+          "coverage": 0.5135135135135135,
+          "accuracy": 1.0,
+          "confidence_cutoff": 0.9080369256856464
+        },
+        "0.8": {
+          "coverage": 0.8108108108108109,
+          "accuracy": 0.9333333333333333,
+          "confidence_cutoff": 0.6703122315598864
+        }
+      }
+    },
+    "cfpb_issue_credit_reporting": {
+      "n": 49,
+      "nll": 0.582848430047743,
+      "acc": 0.6938775510204082,
+      "ece": 0.1451108668010829,
+      "brier": 0.3454552029290918,
+      "mean_conf": 0.7222924996844143,
+      "confident_error_rate": 0.02040816326530612,
+      "coverage_at_0_9": 0.24489795918367346,
+      "accuracy_at_0_9": 0.9166666666666666,
+      "coverage_at_5pct_error": 0.42857142857142855,
+      "coverage_at_1pct_error": 0.12244897959183673,
+      "aurc": 0.1287756909791636,
+      "error_rate_at_0_9": 0.08333333333333333,
+      "confidence_bias": 0.02841494866400618,
+      "top_bins": {
+        "0.9": {
+          "n": 12,
+          "errors": 1,
+          "error_rate": 0.08333333333333333
+        },
+        "0.95": {
+          "n": 7,
+          "errors": 1,
+          "error_rate": 0.14285714285714285
+        },
+        "0.99": {
+          "n": 0,
+          "errors": 0,
+          "error_rate": null
+        }
+      },
+      "selective": {
+        "0.5": {
+          "coverage": 0.5102040816326531,
+          "accuracy": 0.92,
+          "confidence_cutoff": 0.7224720583377402
+        },
+        "0.8": {
+          "coverage": 0.8163265306122449,
+          "accuracy": 0.775,
+          "confidence_cutoff": 0.5412941592694536
+        }
+      }
+    },
+    "cfpb_issue_debt_collection": {
+      "n": 39,
+      "nll": 1.0471955151789678,
+      "acc": 0.6410256410256411,
+      "ece": 0.12236533465990009,
+      "brier": 0.49376396290226,
+      "mean_conf": 0.6595051969545297,
+      "confident_error_rate": 0.02564102564102564,
+      "coverage_at_0_9": 0.15384615384615385,
+      "accuracy_at_0_9": 0.8333333333333334,
+      "coverage_at_5pct_error": 0.10256410256410256,
+      "coverage_at_1pct_error": 0.10256410256410256,
+      "aurc": 0.19852622251530075,
+      "error_rate_at_0_9": 0.16666666666666666,
+      "confidence_bias": 0.018479555928888614,
+      "top_bins": {
+        "0.9": {
+          "n": 6,
+          "errors": 1,
+          "error_rate": 0.16666666666666666
+        },
+        "0.95": {
+          "n": 0,
+          "errors": 0,
+          "error_rate": null
+        },
+        "0.99": {
+          "n": 0,
+          "errors": 0,
+          "error_rate": null
+        }
+      },
+      "selective": {
+        "0.5": {
+          "coverage": 0.5128205128205128,
+          "accuracy": 0.8,
+          "confidence_cutoff": 0.6537266084439923
+        },
+        "0.8": {
+          "coverage": 0.8205128205128205,
+          "accuracy": 0.6875,
+          "confidence_cutoff": 0.500065796076271
+        }
+      }
+    },
+    "cfpb_issue_money_transfer": {
+      "n": 28,
+      "nll": 1.0456480110300737,
+      "acc": 0.7142857142857143,
+      "ece": 0.10641479758965426,
+      "brier": 0.46615982160894337,
+      "mean_conf": 0.8178033729118214,
+      "confident_error_rate": 0.03571428571428571,
+      "coverage_at_0_9": 0.39285714285714285,
+      "accuracy_at_0_9": 0.9090909090909091,
+      "coverage_at_5pct_error": 0.10714285714285714,
+      "coverage_at_1pct_error": 0.10714285714285714,
+      "aurc": 0.1799475019396346,
+      "error_rate_at_0_9": 0.09090909090909091,
+      "confidence_bias": 0.10351765862610707,
+      "top_bins": {
+        "0.9": {
+          "n": 11,
+          "errors": 1,
+          "error_rate": 0.09090909090909091
+        },
+        "0.95": {
+          "n": 10,
+          "errors": 1,
+          "error_rate": 0.1
+        },
+        "0.99": {
+          "n": 8,
+          "errors": 1,
+          "error_rate": 0.125
+        }
+      },
+      "selective": {
+        "0.5": {
+          "coverage": 0.5,
+          "accuracy": 0.8571428571428571,
+          "confidence_cutoff": 0.8517699080404249
+        },
+        "0.8": {
+          "coverage": 0.8214285714285714,
+          "accuracy": 0.7391304347826086,
+          "confidence_cutoff": 0.6560933366907697
+        }
+      }
+    },
+    "cfpb_issue_mortgage": {
+      "n": 55,
+      "nll": 1.0589518455973042,
+      "acc": 0.6,
+      "ece": 0.16836181029733285,
+      "brier": 0.5718769554742247,
+      "mean_conf": 0.7683618102973326,
+      "confident_error_rate": 0.03636363636363636,
+      "coverage_at_0_9": 0.2545454545454545,
+      "accuracy_at_0_9": 0.8571428571428571,
+      "coverage_at_5pct_error": 0.03636363636363636,
+      "coverage_at_1pct_error": 0.03636363636363636,
+      "aurc": 0.2620829059234545,
+      "error_rate_at_0_9": 0.14285714285714285,
+      "confidence_bias": 0.16836181029733266,
+      "top_bins": {
+        "0.9": {
+          "n": 14,
+          "errors": 2,
+          "error_rate": 0.14285714285714285
+        },
+        "0.95": {
+          "n": 6,
+          "errors": 1,
+          "error_rate": 0.16666666666666666
+        },
+        "0.99": {
+          "n": 0,
+          "errors": 0,
+          "error_rate": null
+        }
+      },
+      "selective": {
+        "0.5": {
+          "coverage": 0.509090909090909,
+          "accuracy": 0.7142857142857143,
+          "confidence_cutoff": 0.7815165665283159
+        },
+        "0.8": {
+          "coverage": 0.8,
+          "accuracy": 0.6818181818181818,
+          "confidence_cutoff": 0.6008211830439701
+        }
+      }
+    },
+    "cfpb_issue_personal_loan": {
+      "n": 25,
+      "nll": 1.0163269791037481,
+      "acc": 0.64,
+      "ece": 0.12008541097919295,
+      "brier": 0.5029569052896645,
+      "mean_conf": 0.6514080293763966,
+      "confident_error_rate": 0.0,
+      "coverage_at_0_9": 0.08,
+      "accuracy_at_0_9": 1.0,
+      "coverage_at_5pct_error": 0.32,
+      "coverage_at_1pct_error": 0.32,
+      "aurc": 0.192979780078434,
+      "error_rate_at_0_9": 0.0,
+      "confidence_bias": 0.011408029376396622,
+      "top_bins": {
+        "0.9": {
+          "n": 2,
+          "errors": 0,
+          "error_rate": 0.0
+        },
+        "0.95": {
+          "n": 2,
+          "errors": 0,
+          "error_rate": 0.0
+        },
+        "0.99": {
+          "n": 1,
+          "errors": 0,
+          "error_rate": 0.0
+        }
+      },
+      "selective": {
+        "0.5": {
+          "coverage": 0.52,
+          "accuracy": 0.7692307692307693,
+          "confidence_cutoff": 0.6511179174145093
+        },
+        "0.8": {
+          "coverage": 0.8,
+          "accuracy": 0.65,
+          "confidence_cutoff": 0.47630464853232857
+        }
+      }
+    },
+    "cfpb_issue_student_loan": {
+      "n": 59,
+      "nll": 0.18642720985974134,
+      "acc": 0.9661016949152542,
+      "ece": 0.10258585474343979,
+      "brier": 0.09859691401156206,
+      "mean_conf": 0.8635158401718146,
+      "confident_error_rate": 0.0,
+      "coverage_at_0_9": 0.5932203389830508,
+      "accuracy_at_0_9": 1.0,
+      "coverage_at_5pct_error": 1.0,
+      "coverage_at_1pct_error": 0.8135593220338984,
+      "aurc": 0.005266075292885972,
+      "error_rate_at_0_9": 0.0,
+      "confidence_bias": -0.10258585474343962,
+      "top_bins": {
+        "0.9": {
+          "n": 35,
+          "errors": 0,
+          "error_rate": 0.0
+        },
+        "0.95": {
+          "n": 24,
+          "errors": 0,
+          "error_rate": 0.0
+        },
+        "0.99": {
+          "n": 7,
+          "errors": 0,
+          "error_rate": 0.0
+        }
+      },
+      "selective": {
+        "0.5": {
+          "coverage": 0.5084745762711864,
+          "accuracy": 1.0,
+          "confidence_cutoff": 0.9315453113576484
+        },
+        "0.8": {
+          "coverage": 0.8135593220338984,
+          "accuracy": 1.0,
+          "confidence_cutoff": 0.7155418705490414
+        }
+      }
+    },
+    "cfpb_issue_vehicle_loan": {
+      "n": 36,
+      "nll": 0.8234592202703358,
+      "acc": 0.6666666666666666,
+      "ece": 0.14285520437234325,
+      "brier": 0.39928197632005297,
+      "mean_conf": 0.6563160928137374,
+      "confident_error_rate": 0.0,
+      "coverage_at_0_9": 0.25,
+      "accuracy_at_0_9": 1.0,
+      "coverage_at_5pct_error": 0.5,
+      "coverage_at_1pct_error": 0.5,
+      "aurc": 0.10547888629746897,
+      "error_rate_at_0_9": 0.0,
+      "confidence_bias": -0.010350573852929257,
+      "top_bins": {
+        "0.9": {
+          "n": 9,
+          "errors": 0,
+          "error_rate": 0.0
+        },
+        "0.95": {
+          "n": 6,
+          "errors": 0,
+          "error_rate": 0.0
+        },
+        "0.99": {
+          "n": 1,
+          "errors": 0,
+          "error_rate": 0.0
+        }
+      },
+      "selective": {
+        "0.5": {
+          "coverage": 0.5,
+          "accuracy": 1.0,
+          "confidence_cutoff": 0.611502992498627
+        },
+        "0.8": {
+          "coverage": 0.8055555555555556,
+          "accuracy": 0.7586206896551724,
+          "confidence_cutoff": 0.46253856276348726
+        }
+      }
+    },
+    "cfpb_product": {
+      "n": 546,
+      "nll": 0.29765152654575444,
+      "acc": 0.8901098901098901,
+      "ece": 0.02691328374184737,
+      "brier": 0.15929451386775106,
+      "mean_conf": 0.8719104316214219,
+      "confident_error_rate": 0.007326007326007326,
+      "coverage_at_0_9": 0.6190476190476191,
+      "accuracy_at_0_9": 0.9881656804733728,
+      "coverage_at_5pct_error": 0.8205128205128205,
+      "coverage_at_1pct_error": 0.6172161172161172,
+      "aurc": 0.019505049867342018,
+      "error_rate_at_0_9": 0.011834319526627219,
+      "confidence_bias": -0.018199458488468157,
+      "top_bins": {
+        "0.9": {
+          "n": 338,
+          "errors": 4,
+          "error_rate": 0.011834319526627219
+        },
+        "0.95": {
+          "n": 276,
+          "errors": 0,
+          "error_rate": 0.0
+        },
+        "0.99": {
+          "n": 128,
+          "errors": 0,
+          "error_rate": 0.0
+        }
+      },
+      "selective": {
+        "0.5": {
+          "coverage": 0.5,
+          "accuracy": 1.0,
+          "confidence_cutoff": 0.9510676240022611
+        },
+        "0.8": {
+          "coverage": 0.8003663003663004,
+          "accuracy": 0.9496567505720824,
+          "confidence_cutoff": 0.7433677501994383
+        }
+      }
+    }
+  },
+  "variants": {
+    "clean": {
+      "n": 920,
+      "nll": 0.4735646238550216,
+      "acc": 0.825,
+      "ece": 0.017859286366493227,
+      "brier": 0.2484010511332632,
+      "mean_conf": 0.8184422233784768,
+      "confident_error_rate": 0.009782608695652175,
+      "coverage_at_0_9": 0.4902173913043478,
+      "accuracy_at_0_9": 0.9800443458980045,
+      "coverage_at_5pct_error": 0.625,
+      "coverage_at_1pct_error": 0.44130434782608696,
+      "aurc": 0.04709062877173995,
+      "error_rate_at_0_9": 0.019955654101995565,
+      "confidence_bias": -0.006557776621523126,
+      "top_bins": {
+        "0.9": {
+          "n": 451,
+          "errors": 9,
+          "error_rate": 0.019955654101995565
+        },
+        "0.95": {
+          "n": 346,
+          "errors": 3,
+          "error_rate": 0.008670520231213872
+        },
+        "0.99": {
+          "n": 150,
+          "errors": 1,
+          "error_rate": 0.006666666666666667
+        }
+      },
+      "selective": {
+        "0.5": {
+          "coverage": 0.5,
+          "accuracy": 0.9760869565217392,
+          "confidence_cutoff": 0.8944552685950031
+        },
+        "0.8": {
+          "coverage": 0.8,
+          "accuracy": 0.9035326086956522,
+          "confidence_cutoff": 0.632449844661563
+        }
+      }
+    }
+  },
+  "heldout_tasks": {},
+  "permutation": {
+    "n": 0,
+    "mean_max_delta": null,
+    "flip_rate": null
+  },
+  "temperature": 1.0,
+  "calibrated_clean": {
+    "n": 920,
+    "nll": 0.4735646238550216,
+    "acc": 0.825,
+    "ece": 0.017859286366493227,
+    "brier": 0.2484010511332632,
+    "mean_conf": 0.8184422233784768,
+    "confident_error_rate": 0.009782608695652175,
+    "coverage_at_0_9": 0.4902173913043478,
+    "accuracy_at_0_9": 0.9800443458980045,
+    "coverage_at_5pct_error": 0.625,
+    "coverage_at_1pct_error": 0.44130434782608696,
+    "aurc": 0.04709062877173995,
+    "error_rate_at_0_9": 0.019955654101995565,
+    "confidence_bias": -0.006557776621523126,
+    "top_bins": {
+      "0.9": {
+        "n": 451,
+        "errors": 9,
+        "error_rate": 0.019955654101995565
+      },
+      "0.95": {
+        "n": 346,
+        "errors": 3,
+        "error_rate": 0.008670520231213872
+      },
+      "0.99": {
+        "n": 150,
+        "errors": 1,
+        "error_rate": 0.006666666666666667
+      }
+    },
+    "selective": {
+      "0.5": {
+        "coverage": 0.5,
+        "accuracy": 0.9760869565217392,
+        "confidence_cutoff": 0.8944552685950031
+      },
+      "0.8": {
+        "coverage": 0.8,
+        "accuracy": 0.9035326086956522,
+        "confidence_cutoff": 0.632449844661563
+      }
+    }
+  },
+  "metric_policy": {
+    "version": 2,
+    "selective_ties": "whole_confidence_groups",
+    "coverage_at_error": "in-sample maximum over confidence thresholds; not a deployed error guarantee",
+    "aurc": "right-step integral over whole confidence groups",
+    "confident_error_rate": "high-confidence errors divided by all questions",
+    "error_rate_at_0_9": "errors divided by questions accepted at p_max >= 0.9",
+    "nll": "exact from logits when recorded; otherwise from floored probabilities",
+    "nll_floor": 1e-09,
+    "renormalize_returned_probabilities": true,
+    "raw_sums_outside_1e_5": 0,
+    "returned_zeros": 0
+  },
+  "coverage": {
+    "requested_records": 568,
+    "requested_questions": 920,
+    "evaluated_records": 568,
+    "evaluated_questions": 920,
+    "rejected_records": 0,
+    "truncated_records": 0
+  },
+  "latency_ms": {
+    "median": 299.64077399998246,
+    "p95": 1256.3062427499972
+  },
+  "calibration": {
+    "inference_temperature": 1.0,
+    "additional_temperature": 1.0,
+    "logits_recorded": true
+  },
+  "suite_sha256": "711903d1241cadbfb9e0a20c93d978762123dcbec0108de9c539a60a753cf8d2",
+  "data": null,
+  "date_facts": false,
+  "rotations": 1,
+  "run": "/runs/r6-9b-r2/00-trial-0/checkpoint",
+  "split": "development",
+  "calibration_applied": false,
+  "remote": null
+}

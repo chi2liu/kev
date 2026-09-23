@@ -95,6 +95,23 @@ Their numbers, read with our eyes ([card, "What it scores"](https://huggingface.
 - *Human spot-check:* Jared reviews a random 50 items of the frozen test split in `tools/review`; the suite is described as "AI-adjudicated, human spot-checked (k/50 agreement)". If fewer than 47 of 50 hold up, the suite is not frozen and the protocol is revisited.
 - *Spend:* hard cap $80 on the AI Gateway key `kev-documents-v1-labels` ($100 limit, 30-day expiry), enforced in the labelling script.
 
+### documents-v1 result (frozen 2026-09-23; development read, test locked and unread)
+
+`evals/documents-v1`: 5,219 / 568 / 574 real CFPB complaint narratives (train / development / test), split evenly across 9 products and short (< 1,200 chars) / medium / long (4,000-28,000 chars, about 1k-7k tokens); two Choice questions each (product, main issue). Train: 7,488 questions whose consumer label both open-weight teachers (DeepSeek V3.2, Qwen3-235B) chose. Development / test: 920 / 936 questions, 70 % verified by a unanimous blind judge panel (Claude Opus 4.5, GPT-5, Gemini 3 Flash), the rest decided by two independent adjudications that agreed (562 of 658 agreed, 85 %; 179 consumer labels corrected, 96 disagreements and 229 agreed drops removed). Human spot check: 47 / 50 (Wilson 95 % [0.84, 0.98]), exactly the registered bar; the three disagreements were all panel-verified items. Label spend $32.26 of the $80 cap. `scripts/{build,label,freeze}_documents_v1.py`; labels, adjudications and reviews under `runs/documents-v1-work/`.
+
+**Development read (selection set, fp32, each checkpoint's shipped or fitted temperature; `runs/docs1-*`):**
+
+| model | all (920) | short | medium | long | product | issue | Brier | cov ≤ 5 % | vs Kev-9B (paired) |
+|---|---|---|---|---|---|---|---|---|---|
+| Kev-0.8B | 0.633 | 0.623 | 0.606 | 0.669 | 0.696 | 0.540 | 0.515 | 0.09 | −20.0 pp [−23.1, −16.7] |
+| Kev-4B | 0.811 | 0.826 | 0.810 | 0.797 | 0.890 | 0.695 | 0.283 | 0.62 | −2.2 [−4.2, 0.0] |
+| **Kev-9B (released)** | 0.833 | 0.839 | 0.845 | 0.813 | 0.890 | 0.749 | 0.254 | 0.66 | — |
+| 9B round-5 C9 (long states + soft) | 0.828 | 0.830 | 0.842 | 0.813 | 0.892 | 0.735 | 0.237 | 0.68 | −0.4 [−1.6, +0.8] |
+| 9B `soft-nomnli-thr08` | 0.825 | 0.823 | 0.842 | 0.810 | 0.890 | 0.730 | 0.248 | 0.62 | −0.8 [−2.2, +0.7] |
+| Kev-27B trial A (1 epoch, no long states) | **0.851** | 0.866 | 0.855 | 0.833 | 0.905 | 0.773 | **0.196** | **0.79** | +1.8 [−0.6, +4.2] |
+
+**What it says.** (1) Real long documents do not collapse the way buried synthetic states do: the released Kev-9B loses 2.6 pp from short to long narratives, not the 22-43 pp measured on `longstate-v1`. The synthetic gap is about a state buried among unrelated records, not about length. (2) The round-5/6 long-state training buys nothing on real documents (both 9B candidates within ±1 pp of the release), so a long-document release has to be judged on real documents, and `documents-v1` train is the data to try next. (3) Kev-27B is the best model here too, with the clearest margin in calibration (Brier −0.058, coverage 0.79 vs 0.66). (4) The issue question (5 overlapping options) is where every model loses most; product is near ceiling at 9B.
+
 ## 5. Phase C — follow-ons (~$500)
 
 - Evidence pointers from `<decide>` attention over state tokens; report agreement with Solomon-style sentence pointers on the document suite.
