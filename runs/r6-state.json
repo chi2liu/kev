@@ -3,7 +3,7 @@
  "t0_utc": "2026-09-23T02:03:00Z",
  "baseline_metered_usd": 543.09687061,
  "budget_usd": 1000,
- "phase": "follow-up: 27B two-epoch seeds 1,2 running",
+ "phase": "B1 v2 running",
  "studies": {
   "r6-a1-4b": {
    "bound_usd": 25.06,
@@ -114,6 +114,16 @@
     "trial-1": "fc-01M374FRD49GN7PP1PF8Q78TXX"
    },
    "status": "running"
+  },
+  "r6-27b-v2": {
+   "bound_usd": 100.24,
+   "timeout": 28800,
+   "launched_utc": "2026-09-23T18:58Z",
+   "calls": {
+    "trial-0": "fc-01M37SRZSGARWEZG83ZFH6450E",
+    "trial-1": "fc-01M37SRZZBKBW7A3KYAPSG6SYJ"
+   },
+   "status": "running"
   }
  },
  "reads": {
@@ -160,6 +170,10 @@
   {
    "utc": "2026-09-23T12:39Z",
    "metered": 836.99
+  },
+  {
+   "utc": "2026-09-23T18:55Z",
+   "metered": 874.12
   }
  ],
  "incidents": [],
