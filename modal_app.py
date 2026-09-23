@@ -19,6 +19,7 @@ KEV_HF_SECRET=<modal secret name> to attach a Secret carrying HF_TOKEN for gated
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -385,12 +386,14 @@ def pull_study(study):
     if not target.exists():
         pull_volume(f"/{study}", target.parent)   # recreates runs/<study>/... locally, checkpoints included (gitignored)
     else:
+        # a local trial dir without result.json is a copy taken while the trial was still running: replace it
+        stale = [p for p in target.glob("*-trial-*") if p.is_dir() and not (p / "result.json").exists()]
+        for p in stale: shutil.rmtree(p)
         missing = sorted(d for d in volume_names(f"/{study}")[0] if not (target / d).exists())
         for d in missing: pull_volume(f"/{study}/{d}", target)
         (target / "results.jsonl").unlink(missing_ok=True)   # derived from the trials' result.json; aggregate rebuilds it
-        partial = sorted(p.name for p in target.glob("*-trial-*") if p.is_dir() and not (p / "result.json").exists())
-        print(f"{study}: added {len(missing)} trial(s) {missing or ''}"
-              + (f"; local trial dirs without result.json (still running, or an interrupted download to delete and re-pull): {partial}" if partial else ""))
+        running = sorted(p.name for p in target.glob("*-trial-*") if p.is_dir() and not (p / "result.json").exists())
+        print(f"{study}: fetched {len(missing)} trial dir(s) {missing or ''}" + (f"; still running: {running}" if running else ""))
     subprocess.run([sys.executable, "-m", "kev.experiment", "--aggregate", "--out", str(target)], check=True, cwd=ROOT)
     return target
 
