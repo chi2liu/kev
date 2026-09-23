@@ -75,6 +75,25 @@ Their numbers, read with our eyes ([card, "What it scores"](https://huggingface.
 
 **B3. Autoresearch at 9B** over the enlarged data (~$700): 100 trials at ~$7 with the existing hill-climber ([`kev/autoresearch.py`](kev/autoresearch.py)), knobs = lr, LoRA rank/targets, replay fraction, soft-target weight, placement. Today's incumbents were found at 4B and carried up; 9B has never had its own search.
 
+### B1 v2 and B2 revised (registered 2026-09-23, before any data is built or training launched)
+
+**Why.** Round 6 (`PLAN.md`) left three findings that change B1 and B2. (1) Three Kev-27B seeds agree on about +2.5 pp over Kev-9B on `transfer-v4` development, with much better calibration, knowledge and date arithmetic, but B1's rule (paired lower bound > 0 on 656 questions, and a 3 pp floor on 32-question tasks) cannot resolve a gain of that size. (2) The 27B trials skipped a part of B1's own recipe: `evals/night2/dates_unknowable.jsonl` was not folded in. (3) No 27B has seen a long state, and long-state records are the largest lever measured (+17–20 pp on buried states at 9B), with MNLI-free, threshold-0.8 soft targets keeping short states intact.
+
+**B1 v2 recipe** (study `r6-27b-v2`, `experiments/round6/27b-v2.json`): `Qwen/Qwen3.8-27B@1d4bf0f2`, trained from the base (no `init_from`), one epoch, lr 5e-5, `weights_dtype bf16, dtype bf16, checkpointing 1, batch 1, accum 8` (batch 1 because 6k-token rows at 27B; the effective batch of 8 is unchanged), `p_none_pair 0.25, lora 16, lora_targets all, max_state 7552`, seeds 1 and 2, H200, timeout 28,800 s. Data `evals/round6/b1v2/train.jsonl` (`scripts/build_round6_data.py --b1v2`): the decision-v7 training partition (12,576 records) with the round-6 threshold-0.8 ambiguity targets applied in place and the MNLI records' targets removed, plus `dates_unknowable.jsonl` (1,425), plus 1,400 long-state records (200 / 200 / 500 / 500 of `longstate-v2/train.jsonl`, the `soft-half` subsample). Expected about 4 h and $25 per seed.
+
+**B1 v2 rule** (replaces B1's for these two trials; written before any of them trains):
+- *Selection (development sets):* `transfer-v4` development accuracy ≥ 0.842 (point); MMLU-Pro on `transfer-v9` development ≥ 0.65; unknowable share at p ≥ 0.9 ≤ 0.05; held-out pairs ≥ 0.75; buried questions of `longstate-v2` development ≥ Kev-9B's (0.572) + 10 pp with a paired lower bound > 0; pooled external accuracy (SemIf, scienthoon, wanli-v2, TypeSafe) point estimate ≥ Kev-9B's. The seed with the higher `transfer-v4` accuracy among those passing is the candidate.
+- *Confirmation, read once for the candidate and Kev-9B:* `evals/round6/transfer-r6/test.jsonl` (1,260 unread questions) accuracy paired lower bound > 0 against Kev-9B and no task whose paired interval lies entirely below −3 pp; `evals/round6/longstate-v3/development.jsonl` buried accuracy lower bound > 0 and point ≥ +10 pp against Kev-9B. Reading these panels spends them for every later candidate, 9B included.
+- *Locked read, once:* `kev-27b-v2`: pass if locked `transfer-v4` ≥ 0.862 and served Brier ≤ 0.237 (B1's numbers).
+- A release additionally needs the bf16 serving checks (isolation tolerance and flip rate measured in bf16, a fitted temperature in `head.pt`) and a card stating that the base is post-trained and that the A2 MMLU-Pro gate was overridden.
+
+**B2 revised protocol** (replaces "human-verified labels" with a procedure one person can run):
+- *Documents:* real public documents with an open licence, preferring sources that carry their own labels (for example the US CFPB consumer-complaint narratives, public domain, with product / issue / company-response fields), plus open-licence policy and notice documents whose questions are templated. A frozen `evals/documents-v1` suite with train / development / test partitions, split by document, sha256 in the manifest.
+- *Training labels:* two open-weight teachers from different families through the Vercel AI Gateway (DeepSeek V3.2 and Qwen3-235B; licences re-checked before use); a question is kept only where both agree (and agree with the native label where one exists). No majority vote, no Jev in any role.
+- *Evaluation labels (development and test):* the native label where one exists, checked by a three-judge panel from families other than the teacher and Kev's base (Claude Opus 4.5, GPT-5, Gemini 3); unanimous agreement verifies an item, otherwise the item is adjudicated against the document with a written reason, and items still unresolved are dropped.
+- *Human spot-check:* Jared reviews a random 50 items of the frozen test split in `tools/review`; the suite is described as "AI-adjudicated, human spot-checked (k/50 agreement)". If fewer than 47 of 50 hold up, the suite is not frozen and the protocol is revisited.
+- *Spend:* hard cap $80 on the AI Gateway key `kev-documents-v1-labels` ($100 limit, 30-day expiry), enforced in the labelling script.
+
 ## 5. Phase C — follow-ons (~$500)
 
 - Evidence pointers from `<decide>` attention over state tokens; report agreement with Solomon-style sentence pointers on the document suite.
