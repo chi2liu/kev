@@ -1,6 +1,10 @@
+import contextlib
 import copy
 import pathlib
 import random
+from collections import Counter
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 import pytest
 import torch
@@ -420,6 +424,34 @@ def test_training_losses_match_definitions(options):
     assert torch.allclose(actual, expected)
     actual.backward()
     assert torch.isfinite(z.grad).all()
+
+
+def test_batch_loss_defers_logging_without_retaining_gradients():
+    from kev.train import Variant, batch_loss
+
+    q = {"qid": "q", "qtype": "choice", "label": 1, "keys": ["a", "b", "c"]}
+    first = Variant({"questions": [q]}, {"ids": [1]}, "first", "source", ({"ids": [2]}, [[1, 2, 0]]))
+    second = Variant({"questions": [q]}, {"ids": [3]}, "second", "source")
+    z1 = torch.tensor([0.2, 0.8, -0.1], requires_grad=True)
+    z2 = torch.tensor([0.3, -0.4, 0.5], requires_grad=True)
+    zp = torch.tensor([-0.2, 0.6, 0.3], requires_grad=True)
+    model = SimpleNamespace(forward_batch=Mock(side_effect=[[[z1], [z2]], [[zp]]]))
+    args = SimpleNamespace(ord_w=0.0, label_smoothing=0.0, brier_w=0.0, focal_gamma=0.0, anchor_w=0.4, perm_kl=0.2)
+    anchors = {"first": {"q": {"a": 0.2, "b": 0.7, "c": 0.1}}}
+
+    with patch.object(torch.Tensor, "item", side_effect=AssertionError("logging must not sync per variant")):
+        loss, terms = batch_loss(model, args, [first, second], "cpu", anchors, None, contextlib.nullcontext())
+
+    assert all(not terms[k].requires_grad and terms[k].dtype == torch.float64 for k in ("ce", "kl", "anchor"))
+    assert (terms["anchor_n"], terms["kl_n"]) == (1, 1)
+    run = Counter()
+    run.update(terms)
+    run.update(terms)
+    ce, kl, anchor = torch.stack([torch.as_tensor(run[k], device="cpu") for k in ("ce", "kl", "anchor")]).tolist()
+    assert ce == pytest.approx(2 * (question_loss(z1, q, "cpu", 0).item() + question_loss(z2, q, "cpu", 0).item()))
+    assert kl == pytest.approx(2 * terms["kl"].item()) and anchor == pytest.approx(2 * terms["anchor"].item())
+    loss.backward()
+    assert all(z.grad is not None and torch.isfinite(z.grad).all() for z in (z1, z2, zp))
 
 
 def test_brier_mixture_is_proper_and_soft_targets_unchanged():

@@ -178,15 +178,15 @@ def batch_loss(model, a, batch, dev, anchors, anchor_sources, autocast):
     for v, logits in zip(batch, logits_b):
         ce = sum(question_loss(z.float(), q, dev, a.ord_w, a.label_smoothing, a.brier_w, a.focal_gamma)
                  for z, q in zip(logits, v.rec["questions"])) / len(logits)
-        terms["ce"] += ce.item(); loss = loss + ce
+        terms["ce"] += ce.detach().double(); loss = loss + ce
         if anchors and v.request_id in anchors and (anchor_sources is None or v.source in anchor_sources):
             kls = [t for t in (anchor_loss(z.float(), q, anchors[v.request_id].get(q["qid"]), dev) for z, q in zip(logits, v.rec["questions"])) if t is not None]
             if kls:
-                kl_a = sum(kls) / len(kls); loss = loss + a.anchor_w * kl_a; terms["anchor"] += kl_a.item(); terms["anchor_n"] += 1
+                kl_a = sum(kls) / len(kls); loss = loss + a.anchor_w * kl_a; terms["anchor"] += kl_a.detach().double(); terms["anchor_n"] += 1
     for v, logits2 in zip(permuted, logits2_b):
         logits = logits_b[batch.index(v)]
         kls = [permutation_kl(z1.float(), z2.float(), perm, dev) for z1, z2, perm in zip(logits, logits2, v.permuted[1]) if perm is not None]
-        kl = sum(kls) / len(kls); loss = loss + a.perm_kl * kl; terms["kl"] += kl.item(); terms["kl_n"] += 1
+        kl = sum(kls) / len(kls); loss = loss + a.perm_kl * kl; terms["kl"] += kl.detach().double(); terms["kl_n"] += 1
     if not torch.isfinite(loss):
         raise ValueError("non-finite training loss")
     return loss, terms
@@ -330,14 +330,15 @@ def main():
             # weight by source records in the accumulation group so none-pair siblings do not inflate a record's share
             group_records = accumulation_records(len(reqs), a.batch, a.accum, mb) * (len(batch) / len(chunk))
             (loss / group_records).backward()
-            run += terms; run["n"] += len(batch); seen += len(batch); tokens_seen += sum(v.tokens for v in batch)
+            run.update(terms); run["n"] += len(batch); seen += len(batch); tokens_seen += sum(v.tokens for v in batch)
             peak_mem = max(peak_mem, allocated_bytes(dev))
             if (mb + 1) % a.accum == 0 or mb + 1 == micro_per_epoch:
                 torch.nn.utils.clip_grad_norm_(model.trainable_parameters(), 1.0)
                 opt.step(); sched.step(); opt.zero_grad(); step += 1
                 if dev == "mps": empty_cache(dev)   # MPS only: per-step cache release keeps the unified-memory footprint down; on CUDA it would just slow the step
                 if step % 10 == 0:
-                    print(f"ep{ep} step {step}/{steps} loss {run['ce']/run['n']:.3f} kl {run['kl']/max(run['kl_n'],1):.3f} anchor {run['anchor']/max(run['anchor_n'],1):.3f} {(time.time()-t0)/seen:.3f}s/rec", flush=True)
+                    ce, kl, anchor = torch.stack([torch.as_tensor(run[k], device=dev) for k in ("ce", "kl", "anchor")]).tolist()
+                    print(f"ep{ep} step {step}/{steps} loss {ce/run['n']:.3f} kl {kl/max(run['kl_n'],1):.3f} anchor {anchor/max(run['anchor_n'],1):.3f} {(time.time()-t0)/seen:.3f}s/rec", flush=True)
                     run = Counter()
 
     model.lm.save_pretrained(a.out)
