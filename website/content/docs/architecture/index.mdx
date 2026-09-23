@@ -1,0 +1,46 @@
+---
+title: Overview
+description: A prefill-only causal LM with isolated question branches and a pointer readout over option boundaries.
+icon: Cpu
+---
+
+This section is written for ML researchers and engineers. It assumes familiarity with transformer internals, LoRA and calibration metrics. For using Kev, start at [What is Kev?](/docs) instead.
+
+## The model in one paragraph
+
+Kev is a frozen pretrained causal LM (Qwen3.5-0.8B/4B/9B-Base) with a rank-16 LoRA adapter and a small bilinear **pointer head**. A request (one state, $$Q$$ questions, each with $$K_q$$ options) is serialized with five repurposed special tokens. Every question sees the state and its own tokens, never another question. For each question, the head scores the hidden state at each option's closing delimiter against the hidden state at a final `<decide>` token and applies a softmax over the $$K_q$$ scores. The model runs prefill only: there is no LM head and no decoding. Training is cross-entropy on the labeled option; calibration is one temperature per checkpoint, applied at inference.
+
+## Formally
+
+For a request with state $$s$$ and questions $$q_1, \dots, q_Q$$, Kev computes
+
+$$
+p(o_{j} \mid s, q_i) = \operatorname{softmax}_j\!\left(\frac{(W_k h_{i,j})^\top (W_q h_{i}^{\mathrm{dec}})}{\sqrt{d_p}\,T}\right)
+$$
+
+where $$h_{i,j}$$ is the final-layer hidden state at the `</opt>` token closing option $$j$$ of question $$i$$, $$h_i^{\mathrm{dec}}$$ the hidden state at question $$i$$'s `<decide>` token, $$W_q, W_k \in \mathbb{R}^{d_p \times d}$$ with $$d_p = 256$$, and $$T$$ the checkpoint's temperature (1 during training).
+
+The isolation constraint is that $$h_{i,\cdot}$$ is a function of $$(s, q_i)$$ only. The rest of this section is about how that constraint is realized on two very different backbone families, and what it costs.
+
+## Design choices
+
+| Choice | Alternative | Why |
+| --- | --- | --- |
+| Pointer over option boundaries | LM-head logits of option tokens | Options can be arbitrary multi-token text, named or unnamed. The score is content-addressed rather than tied to a label vocabulary, and $$K$$ is unbounded by the tokenizer (the API caps it at 255). |
+| One shared state, isolated branches | One forward pass per question | The state is read once. Question wording can't leak into sibling answers. |
+| Prefill only | Constrained generation | One forward pass per request, fixed cost, exact probabilities over the option set rather than over token strings. |
+| LoRA + head on a frozen base | Full fine-tune | Small trainable footprint and cheap delta fine-tunes; base knowledge is mostly preserved (see [open problems](/docs/architecture/open-problems) for where it isn't). |
+| Post-hoc single temperature | Loss-side calibration (label smoothing, Brier, focal) | Loss modifiers screened in round 3 of the research log were negative; a single temperature doesn't change the argmax. |
+
+## Pages
+
+- [Input encoding](/docs/architecture/input-encoding): serialization, delimiters, structured content, positions.
+- [Attention mask](/docs/architecture/attention-mask): the packed block-causal form on attention-only bases.
+- [Hybrid backbones](/docs/architecture/hybrid-backbones): why Gated DeltaNet breaks the packed mask and the row form that replaces it.
+- [Pointer head and calibration](/docs/architecture/pointer-head): readout, temperature fitting, confidence statistics.
+- [Training](/docs/architecture/training): data, augmentations, LoRA targets, delta fine-tunes.
+- [Serving](/docs/architecture/serving): prefix caching, batching bounds, bf16 and MLX parity.
+- [Evaluation protocol](/docs/architecture/evaluation-protocol): frozen suites, locked tests, pre-registration, paired bootstraps.
+- [Open problems](/docs/architecture/open-problems): long states, ranking quality, knowledge, option order.
+
+The code is small: [`kev/model.py`](https://github.com/jaredpalmer/kev/blob/main/kev/model.py) (encoding, masks, rows, head) is under 400 lines. The research log is [`PLAN.md`](https://github.com/jaredpalmer/kev/blob/main/PLAN.md).

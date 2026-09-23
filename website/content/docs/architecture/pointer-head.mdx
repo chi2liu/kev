@@ -1,0 +1,65 @@
+---
+title: Pointer head and calibration
+description: The bilinear readout over option boundaries, the per-checkpoint temperature, and the confidence statistics the API reports.
+---
+
+## Readout
+
+For question $$i$$ with options $$1..K$$, let $$h^{\mathrm{dec}}_i \in \mathbb{R}^d$$ be the backbone's final hidden state at `<decide>` and $$h_{i,j}$$ the state at option $$j$$'s `</opt>`. The head is two linear maps into a $$d_p = 256$$-dimensional pointer space:
+
+$$
+z_{i,j} = \frac{(W_k h_{i,j} + b_k)^\top (W_q h^{\mathrm{dec}}_i + b_q)}{\sqrt{d_p}}, \qquad p_{i,\cdot} = \operatorname{softmax}(z_{i,\cdot} / T).
+$$
+
+Choices worth noting:
+
+- **Why `</opt>`.** In a causal model, the closing delimiter is the first position that has read the whole option text (and, causally, every earlier option). It's a natural summary token for a span of arbitrary length.
+- **Why `<decide>` last.** It attends to the state, the instruction and all options, so the query vector can depend on the full option set. This is where "none of the above" or relative judgments can be expressed.
+- **Content-addressed.** The score depends on the option's representation, not a fixed class index, so one head serves Noul, Choice with any labels, and Score, with $$K$$ from 1 to 255.
+- **No LM head.** The backbone is loaded without its vocabulary projection; Kev never produces token logits.
+
+The head is small next to the backbone: $$2(d \cdot d_p + d_p)$$ parameters, about 2.1M at 9B ($$d = 4096$$).
+
+## Loss
+
+Training minimizes cross-entropy on the labeled option, at $$T = 1$$. Other terms exist behind flags (permutation KL between two option orders, ranked probability score for Score, KL toward the frozen base's zero-shot answers, label smoothing, Brier, focal) and all default to zero; none is in a release. Soft targets (a mixture of the label and a teacher distribution) are supported and have been studied as a delta, not released (see [open problems](/docs/architecture/open-problems#ranking-quality)).
+
+## Temperature scaling
+
+A trained pointer head is overconfident out of the box. Every released checkpoint carries one scalar $$T$$ in `head.pt["temperature"]`, applied in eval mode only:
+
+| Checkpoint | $$T$$ |
+| --- | --- |
+| Kev-0.8B | 2.41 |
+| Kev-4B | 2.14 |
+| Kev-9B | 2.30 |
+
+$$T$$ is chosen by `scripts/calibrate_checkpoint.py`: minimize mean NLL over a 121-point log grid on $$[0.25, 4]$$, fitted on the checkpoint's in-distribution **development** rows (never transfer or test), on raw logits. The script also reports a group-disjoint, 5-fold out-of-fold ECE with record-clustered bootstrap intervals, so the in-sample fit can be checked against held-out records: for Kev-4B, ECE 0.075 raw → 0.020 out-of-fold.
+
+Properties:
+
+- **Argmax-invariant.** Dividing logits by a positive scalar doesn't change the ranking, so accuracy is identical with and without calibration.
+- **Global.** One $$T$$ for all question types and sources. Per-group temperatures were tried and were negative.
+- **Not transferable by default.** On WANLI (far from the training distribution), the shipped $$T$$ leaves Kev-9B at ECE 0.131; a $$T$$ fitted on WANLI's own rows (3.56, out-of-fold) brings it to 0.037. On TypeSafe's public set, the shipped $$T$$ already fits. `kev.calibrate --rows` fits and reports a workload temperature; `KEV_TEMPERATURE` serves it.
+
+## Confidence statistics
+
+The API adds a scalar `confidence` for Choice and Score, a deterministic function of $$p$$:
+
+$$
+\mathrm{conf}_{\text{choice}} = \frac{p_{\max} - 1/K}{1 - 1/K}, \qquad
+\mathrm{conf}_{\text{score}} = 1 - \frac{\mathbb{E}_p\,|\ell - \hat\ell|}{L - 1}, \quad \hat\ell = \arg\max_\ell p_\ell.
+$$
+
+The Choice statistic rescales the top probability so that uniform is 0 and one-hot is 1, making thresholds comparable across option counts. The Score statistic measures mass concentration around the mode in ordinal distance. TypeSafe doesn't publish its Score formula; Kev's is an approximation of the described behavior.
+
+The benchmark metrics (ECE, confident-error rate, coverage) use $$p_{\max}$$, not these API statistics. See [Metrics](/docs/benchmarks/metrics).
+
+## Why not calibrate harder
+
+Two alternatives were screened and didn't help the thing that matters for routing, which is **ranking** errors below correct answers:
+
+- **Loss-side calibration** (label smoothing, Brier, focal): negative in the round-3 screen.
+- **A logistic reliability head** on $$(p_{\max}, \text{margin}, \text{entropy}, \log K, \text{type})$$, fitted on a held-out calibration partition: AURC got worse at both sizes.
+
+Temperature scaling fixes the level of the probabilities; it can't reorder them. The ordering problem is open.

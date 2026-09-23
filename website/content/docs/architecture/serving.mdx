@@ -1,0 +1,72 @@
+---
+title: Serving
+description: Prefix caching, memory bounds, precision, and the MLX backend, with the parity numbers that justify each.
+---
+
+The reference server is [`kev/serve.py`](https://github.com/jaredpalmer/kev/blob/main/kev/serve.py), a FastAPI app implementing TypeSafe's public System One contract. One request is one prefill; there's no decoding loop.
+
+## Request path
+
+1. Render the request to a record and encode it at serving limits (8,192-token state, 8,192-token row).
+2. Key the **state prefix** by its token IDs.
+3. Under a per-model lock:
+   - **hit:** run only the branches against the cached prefix;
+   - **miss:** run a pass that also returns the prefix, and insert it;
+   - **ineligible** (cache disabled, or state shorter than the minimum): one plain pass.
+4. Map probabilities back to typed answers, round to four decimals, attach usage and `x-typesafe-request-id`.
+
+Requests are serialized per model process. To serve more traffic, run more replicas.
+
+## Prefix cache
+
+Because the state never attends to branches, its cache is a pure function of the state tokens. The server keeps an LRU of `KEV_PREFIX_CACHE` states (default 4) holding the KV/recurrent cache and the state's hidden states.
+
+| Backbone | Minimum state length cached | Why |
+| --- | --- | --- |
+| Hybrid (Qwen3.5) and MLX | 0 | Without it, the row form recomputes the state per question |
+| Attention-only, PyTorch | 384 | Below that, a branch-only pass isn't faster than one packed pass on MPS (per-op overhead) |
+
+On attention-only bases the cache is cropped back to the state after each use so it stays reusable. Parity of hit, miss and uncached paths is a test (`test_row_batching_and_packed_fallback_do_not_change_answers`, `test_hybrid_rows_isolation_and_prefix`).
+
+Measured effect (Kev-4B via MLX on an M5, five three-option questions, ~270-token state): 721 ms for a new state, 136 ms for a repeated one.
+
+## Memory bound
+
+The row form runs `rows_per_pass` rows per forward pass: as many as fit a 16,384-token budget counting each row's cached state plus its branch, at least one. Memory per pass is therefore bounded by one maximal row regardless of question count. Rows are independent, so the split can't change answers. Kev-4B on MLX with a 4.8k-token state and 64 questions: 24.7 GB peak in one pass, 8.9 GB with one row at a time, and faster.
+
+## Precision
+
+Evaluation always runs fp32 (TF32 and fused SDPA disabled on CUDA). Serving defaults to bf16 on CUDA and Apple GPUs, a latency decision. Kev-4B on an L4, three questions:
+
+| Precision | 101-token request | 330-token request |
+| --- | ---: | ---: |
+| fp32 | 209 ms | 850 ms |
+| fp32 + TF32 matmuls | 113 ms | 354 ms |
+| bf16 (default) | 118 ms | 189 ms |
+
+All three returned the same probabilities to two decimals on that test. `KEV_DTYPE=fp32` serves the exact evaluation path. On CUDA, `flash-linear-attention` provides the DeltaNet kernels; `causal_conv1d` made no measurable prefill difference and isn't installed.
+
+## MLX backend
+
+PyTorch has no fast DeltaNet kernels on MPS, so on Apple Silicon the server runs Qwen3.5 checkpoints through [mlx-lm](https://github.com/ml-explore/mlx-lm). Only the backbone changes: the encoder, pointer head and temperature are the same code, behind a shared scoring interface that a test checks both implementations against.
+
+Parity with fp32 PyTorch on all 1,264 questions of the decision-v7 development partition:
+
+| Model | Max \|Δp\| | Mean \|Δp\| | Argmax flips |
+| --- | ---: | ---: | ---: |
+| Kev-4B | 0.025 | 0.0016 | 1 (0 via the prefix cache) |
+| Kev-0.8B | 0.054 | 0.0023 | 4 (0.3%) |
+
+Latency on an M5 (32 GB), five questions, ~270-token state:
+
+| Model | MLX new / cached | PyTorch bf16 on MPS new / cached |
+| --- | ---: | ---: |
+| Kev-0.8B | 149 / 28 ms | 1,062 / 276 ms |
+| Kev-4B | 721 / 136 ms | 3,302 / 847 ms |
+
+`scripts/mlx_parity.py --run jaredpalmer/kev-4b` reproduces both tables. `/v1/models` reports the active backend, dtype, temperature and cache stats.
+
+## Not implemented
+
+- **Rotation-averaged Choice.** Scoring cyclic rotations of the options and log-averaging cuts Kev-9B's option-order flip rate from 2.8% to 0% on the benchmark's permuted items, at 2–3× latency with no accuracy gain. It met its pre-registered gate but isn't a serving option yet.
+- **Cross-request batching.** See above.

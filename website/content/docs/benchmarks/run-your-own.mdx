@@ -1,0 +1,70 @@
+---
+title: Measure on your data
+description: Score Kev (and Jev) on your own labeled examples before you pick a model or a threshold.
+icon: FlaskConical
+---
+
+Public benchmarks tell you roughly how good a model is. They can't tell you how it does on your tickets, your policies or your product catalog. A few hundred labeled examples from your own data will.
+
+## 1. Collect labeled examples
+
+Write one request per line, with the right answer as a `label` on each question. Use the exact wording you'll use in production.
+
+```json title="labeled.jsonl (one line, wrapped here for reading)"
+{"state": {"subject": "Charged twice", "body": "I see two charges for order #4411. Please refund one."},
+ "questions": {
+   "team":  {"type": "choice", "instructions": "Which team should handle this ticket?",
+             "criteria": {"billing": "Payments and refunds", "shipping": "Delivery problems", "access": "Login and account access"},
+             "label": "billing"},
+   "angry": {"type": "noul", "instructions": "Is the customer angry?", "label": false}}}
+```
+
+Labels are the option name for Choice, `true`/`false` for Noul, and the level index (0 = first) for Score. 200–500 examples give useful numbers. Draw them from real traffic, not from the easy cases you remember.
+
+## 2. Score a model
+
+Against a local checkpoint:
+
+```bash
+uv run python -m kev.benchmark --run jaredpalmer/kev-4b --data labeled.jsonl --out runs/mine-4b
+```
+
+Or against any running endpoint, such as your [Modal deployment](/docs/deploy/modal):
+
+```bash
+KEV_REMOTE_API_KEY=$KEV_API_KEY uv run python -m kev.benchmark \
+  --remote https://<workspace>--kev-api.modal.run --data labeled.jsonl --out runs/mine-modal
+```
+
+`report.json` has accuracy, Brier, calibration error, confident errors and coverage at a 5% error budget. `rows.json` has every question's probabilities, so you can pick a threshold yourself.
+
+## 3. Compare two models
+
+```bash
+uv run python -m kev.benchmark --run jaredpalmer/kev-9b --data labeled.jsonl --out runs/mine-9b
+uv run python -m kev.compare --candidate runs/mine-9b --reference runs/mine-4b --out runs/9b-vs-4b
+```
+
+`kev.compare` pairs the two runs question by question and reports the difference with a 95% confidence interval. If the interval includes zero, you don't have evidence that one model is better on your data.
+
+## 4. Check calibration
+
+```bash
+uv run python -m kev.calibrate --rows runs/mine-4b/rows.json
+```
+
+This reports how calibrated the shipped probabilities are on your rows, and what a temperature fitted to your data would do, measured on held-out folds so the fit doesn't grade itself. It only reports; it doesn't change the model. If your own temperature helps a lot, see [fine-tuning](/docs/guides/fine-tuning#things-to-know).
+
+## Picking a threshold
+
+Sort `rows.json` by top probability, and for each candidate threshold compute the share of questions above it (coverage) and the error rate among them. Pick the lowest threshold whose error rate you can accept. Then check it again on fresh examples, because the threshold was chosen on these ones.
+
+## Scoring Jev on the same data
+
+The Kev repo can also score Jev, through Vercel AI Gateway, on a frozen suite directory. It needs an `AI_GATEWAY_API_KEY` and is capped by `--budget` (in dollars):
+
+```bash
+AI_GATEWAY_API_KEY=... uv run python -m kev.jev --suite evals/v4/transfer-v4 --out runs/jev-transfer --budget 1
+```
+
+For your own data, calling Jev with the [TypeSafe SDK](/docs/integrations/typesafe-python) on the same `labeled.jsonl` and comparing answers works too.

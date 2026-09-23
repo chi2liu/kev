@@ -1,0 +1,80 @@
+---
+title: Writing good questions
+description: Small, specific questions composed in your code beat one big clever question.
+icon: PencilLine
+---
+
+Kev answers exactly the question you ask. Most accuracy problems come from questions that are vague, compound, or depend on facts that aren't in the state.
+
+## Ask one thing at a time
+
+A question that bundles several judgments forces Kev to guess how you'd combine them.
+
+<Tabs items={["Instead of", "Ask"]}>
+<Tab value="Instead of">
+
+```json
+"should_refund": {
+  "type": "noul",
+  "instructions": "Should we refund this customer?"
+}
+```
+
+"Should we refund?" hides three judgments: did they ask for one, does the policy allow it, and is there a reason to be cautious.
+
+</Tab>
+<Tab value="Ask">
+
+```json
+"asked_for_refund":  { "type": "noul", "instructions": "Is the customer asking for a refund?" },
+"policy_allows":     { "type": "noul", "instructions": "Does the refund policy in the state cover this situation?" },
+"fraud_signals":     { "type": "noul", "instructions": "Are there signs this could be fraud, such as repeated refund requests?" }
+```
+
+Then combine them in code, where the business rule is visible and testable:
+
+```python
+p = {qid: answer.noul for qid, answer in response.nouls.items()}
+if p["asked_for_refund"] > 0.8 and p["policy_allows"] > 0.8 and p["fraud_signals"] < 0.2:
+    issue_refund()
+else:
+    send_to_agent()
+```
+
+</Tab>
+</Tabs>
+
+This costs nothing extra: all three questions run in the same request against the same state.
+
+## Make options clearly different
+
+For Choice, each option should describe a distinct outcome. Descriptions help most when the names alone are ambiguous.
+
+- Good: `billing` "Charges, invoices, refunds" / `shipping` "Delivery status, delays, lost packages"
+- Weak: `billing` / `payments` / `invoices` (these overlap; Kev will split probability between them)
+
+If none of your options may fit, add one that says so: `"other": "None of the above"`. Otherwise Kev has to pick the least-bad option, and the probability will look more certain than it should.
+
+## Put the facts in the state, not the question
+
+Kev only knows what's in the request. If the answer depends on a policy, a price or a date, put it in the state:
+
+```json
+"state": {
+  "message": "I'd like to return these boots, bought them on June 2.",
+  "today": "2026-06-30",
+  "return_policy": "Returns accepted within 30 days of purchase."
+}
+```
+
+<Callout type="warn" title="Kev isn't good at arithmetic or trivia">
+  Kev is small and focused on reading comprehension. It doesn't know facts about the world as well as larger models, and it can't reliably count days between dates. If a decision depends on a calculation, do it in your code and put the result in the state (`"days_since_purchase": 28`). For dates specifically, the server can do this for you: set `KEV_DATE_FACTS=1` and it appends the day count between any two absolute dates it finds.
+</Callout>
+
+## Use Score for anything ordered
+
+"Low / medium / high", "not at all / somewhat / very", "1 to 5 stars": these are Scores, not Choices. Score understands that "medium" sits between "low" and "high", gives you a number you can threshold, and penalizes far-off answers more than nearby ones.
+
+## Test on real examples
+
+Write down 20 real inputs and the answers you expect before tuning wording. Try the questions in the [playground](/docs/quickstart#try-it-without-code), look at the probabilities, and change one thing at a time. If a question stays unreliable after rewording, it's a good candidate for [fine-tuning](/docs/guides/fine-tuning).

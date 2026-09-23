@@ -1,0 +1,81 @@
+---
+title: Confidence-gated routing
+description: Automate the easy decisions, send the hard ones to a person or a bigger model.
+icon: ShieldCheck
+---
+
+No model is right every time. The point of calibrated probabilities is that you can tell **which** answers to trust. The pattern is simple:
+
+```text
+Kev answers ──► confident? ──yes──► act automatically
+                    │
+                    no
+                    ▼
+            human review / bigger model / ask the user
+```
+
+## The code
+
+```python
+from typesafe_sdk import Choice, Noul, TypeSafeClient
+
+kev = TypeSafeClient(api_key="local", base_url="http://127.0.0.1:8009", model="kev-latest")
+
+response = kev.system_one(
+    state={"ticket": ticket_text, "customer_plan": plan},
+    questions={
+        "team": Choice(
+            instructions="Which team should handle this ticket?",
+            criteria={
+                "billing": "Charges, refunds, invoices",
+                "shipping": "Delivery status, delays, lost packages",
+                "technical": "Bugs, errors, the app not working",
+            },
+        ),
+        "legal_risk": Noul(instructions="Does the customer mention a lawyer, lawsuit or regulator?"),
+    },
+)
+
+team = response.choices["team"]
+legal = response.nouls["legal_risk"].noul
+
+if legal > 0.3:
+    escalate_to_legal()          # cheap to check, expensive to miss: low threshold
+elif team.confidence >= 0.6:
+    assign(team.choice)          # clear case: automate
+else:
+    send_to_triage(suggested=team.choice, probabilities=team.probabilities)
+```
+
+Two things to notice:
+
+- **Thresholds are per question and per cost.** Missing a legal threat is far worse than a false alarm, so that question escalates at a low probability. Mis-routing a ticket is cheap, so it only needs to be decisive, not certain.
+- **Low confidence isn't wasted.** Pass Kev's suggestion and probabilities to the human queue. "Probably billing (0.55) or shipping (0.40)" still saves the reviewer time.
+
+## Choosing thresholds
+
+Start strict (for example, `confidence >= 0.8`) so almost nothing wrong gets automated, then lower the threshold as you collect evidence. The [measurement recipe](/docs/concepts/probabilities-and-confidence#measure-on-your-own-data) gives you the error rate at every possible threshold from a few hundred labeled examples.
+
+Track two numbers in production:
+
+| Metric | What it tells you |
+| --- | --- |
+| **Coverage** | Share of decisions automated. Goes up as you lower the threshold. |
+| **Automated error rate** | Share of automated decisions a human later corrected. Goes up as you lower the threshold. |
+
+If coverage drops suddenly, your inputs have probably changed (a new product, a new language, a template change). Kev becomes less sure on unfamiliar data, which is exactly the behavior you want.
+
+## Escalating to a bigger model
+
+The "no" branch doesn't have to be a human. A common setup is Kev-4B first and Kev-9B or Jev for the uncertain cases. Because Kev and Jev speak the same API, the fallback is just a second client:
+
+```python
+kev = TypeSafeClient(api_key=KEV_KEY, base_url=KEV_URL, model="kev-latest")
+jev = TypeSafeClient(api_key=TYPESAFE_API_KEY)  # api.typesafe.ai, jev-latest
+
+answer = kev.system_one(state=state, questions=questions).choices["team"]
+if answer.confidence < 0.6:
+    answer = jev.system_one(state=state, questions=questions).choices["team"]
+```
+
+The cheap model handles the bulk; you pay for the expensive one only when it matters.

@@ -1,0 +1,58 @@
+---
+title: Hybrid backbones
+description: Why Qwen3.5's Gated DeltaNet layers break the packed mask, and the row form Kev uses instead.
+---
+
+## The problem
+
+Qwen3.5 interleaves full-attention layers with **Gated DeltaNet** layers ([Yang et al., 2024](https://arxiv.org/abs/2412.06464)): a linear-attention recurrence with a gated delta-rule state update, preceded by a short causal convolution. Three of every four layers are DeltaNet:
+
+| Base | Layers | DeltaNet | Full attention | Hidden size |
+| --- | --- | --- | --- | --- |
+| Qwen3.5-0.8B-Base | 24 | 18 | 6 | 1,024 |
+| Qwen3.5-4B-Base | 32 | 24 | 8 | 2,560 |
+| Qwen3.5-9B-Base | 32 | 24 | 8 | 4,096 |
+
+A recurrent layer has no per-pair attention weights to mask. It updates one state token by token, so in a packed sequence question 2's tokens would read a state that has already absorbed question 1. The `transformers` implementation confirms this: the 4D mask is consulted only for `full_attention` layers; DeltaNet layers use the 2D mask to zero padding and nothing else. Packing on a hybrid base would silently break isolation.
+
+## The row form
+
+Instead of one masked row, every question runs as its own causal row containing exactly the tokens it's allowed to see:
+
+```text
+row 1:  <state> …state… <q> instr₁ <opt> … </opt> … <decide>
+row 2:  <state> …state… <q> instr₂ <opt> … </opt> … <decide>
+```
+
+Position IDs are the same as in the packed form (the branch continues from $$L_s$$). `rows_of` splits a packed encoding into state + branch rows, so the two forms share one encoder.
+
+Isolation is now exact **by construction**: rows are independent tensors, and there's no mask to get wrong. On an attention-only base, the row form reproduces the packed form's probabilities to $$10^{-4}$$ (`test_rows_match_packed`), which is what licensed moving the whole family to it.
+
+## Computing the state once
+
+Naively, the row form recomputes the state $$Q$$ times. At inference, Kev avoids that:
+
+1. **State pass.** Run `<state> …` once with a cache. For attention layers the cache holds KV; for DeltaNet layers it holds the recurrent state and the conv state.
+2. **Branch pass.** Replicate the cache along the batch dimension (`reorder_cache` with zero indices) and run the $$Q$$ branches as a right-padded batch continuing from it.
+3. **Readout.** Gather `</opt>` and `<decide>` hidden states per row and apply the unchanged [pointer head](/docs/architecture/pointer-head).
+
+The chunked delta-rule kernel accepts an initial recurrent state, so continuing from a cached state is supported by the library rather than patched in. [SemIf](https://github.com/TheoLeeCJ/SemIf) uses the same prefill-then-replicate pattern on Qwen3.5-4B.
+
+Two consequences:
+
+- DeltaNet states can't be cropped the way KV can, so on a cache miss the server runs the state pass (kept as the prefix) followed by the branch rows, rather than one full pass then cropping.
+- Serving always uses the prefix path on hybrid models, at any state length (`prefix_min_tokens = 0`), because otherwise every question recomputes the state. Kev-0.8B bf16 on MPS with five questions: 1,011 ms → 413 ms.
+
+`test_hybrid_rows_isolation_and_prefix` checks, on Qwen3.5-0.8B-Base, that together, alone, cache-miss, cache-hit and one-row-per-pass answers all agree to $$10^{-4}$$.
+
+## Training
+
+Training through a replicated cache is less certain mechanically (cache tensors can be updated in place or detached), so training builds rows with the state duplicated per row. Training records average about 1.3 questions and states are at most 384 tokens, so the overhead is small.
+
+## LoRA on DeltaNet
+
+With `--lora_targets all` (the release setting) on a hybrid base, the adapter covers the attention and MLP projections plus the DeltaNet projections (`in_proj_qkv`, `in_proj_z`, `in_proj_a`, `in_proj_b`, `out_proj`). `--lora_targets dense` freezes the DeltaNet projections; it was tried as a retention ablation (less drift from the base) and was negative.
+
+## Other hybrids tried
+
+Qwen3.5-35B-A3B (a mixture-of-experts hybrid) was trained as a probe. It kept its date arithmetic under Kev training where the dense bases didn't, but it wasn't adopted. See the [research log](https://github.com/jaredpalmer/kev/blob/main/PLAN.md).

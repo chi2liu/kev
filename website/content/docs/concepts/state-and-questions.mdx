@@ -1,0 +1,105 @@
+---
+title: State, questions and answers
+description: Every Kev request is one piece of data and a list of questions about it.
+icon: Boxes
+---
+
+A Kev request has two parts. The **state** is the thing you want judged. The **questions** are the judgments you want made. The response has one **answer** per question.
+
+```json
+{
+  "state": "…the data…",
+  "model": "kev-latest",
+  "questions": {
+    "your_id": { "type": "choice", "instructions": "…", "criteria": { … } },
+    "another": { "type": "noul", "instructions": "…" }
+  }
+}
+```
+
+## State
+
+The state is whatever Kev should look at: a message, a form submission, a record from your database, a conversation. It can be a string, a JSON object, or an array.
+
+<Tabs items={["String", "Object", "Array"]}>
+<Tab value="String">
+
+```json
+"state": "My card was charged twice for order A-104."
+```
+
+</Tab>
+<Tab value="Object">
+
+```json
+"state": {
+  "subject": "Duplicate charge",
+  "body": "My card was charged twice for order A-104.",
+  "plan": "Pro",
+  "refund_policy": "Duplicate charges are refunded in full."
+}
+```
+
+</Tab>
+<Tab value="Array">
+
+```json
+"state": [
+  "Hi, quick question.",
+  "My card was charged twice for order A-104.",
+  "Can you refund one of them?"
+]
+```
+
+</Tab>
+</Tabs>
+
+**Prefer objects.** Kev turns objects into labeled text, so field names become context the model can use. The object above reaches the model as:
+
+```text
+subject: Duplicate charge
+body: My card was charged twice for order A-104.
+plan: Pro
+refund_policy: Duplicate charges are refunded in full.
+```
+
+Nested objects are indented and arrays become bullet lists. Name your fields the way you'd explain them to a new coworker: `refund_policy` is better than `rp`.
+
+**Put everything the decision depends on in the state.** Kev only knows what you send it. If the right answer depends on the customer's plan or a policy, include the plan and the policy.
+
+**Keep it short.** Kev was trained on states up to 384 tokens (roughly 300 words) and the server accepts states up to 8,192 tokens. Longer states work, but accuracy falls as they grow. Trim signatures, quoted email history and boilerplate before sending.
+
+## Questions
+
+`questions` is an object. The keys are IDs you choose (`department`, `is_urgent`, `q1`); Kev never sees them, so pick names that make your code readable. Each question has:
+
+| Field | What it is |
+| --- | --- |
+| `type` | `"choice"`, `"noul"` or `"score"`. See [Question types](/docs/concepts/question-types). |
+| `instructions` | The question, in plain language. "Which team should handle this ticket?" |
+| `criteria` | The possible answers. Named options for Choice, ordered levels for Score, optional yes/no descriptions for Noul. |
+
+You can send many questions in one request. Kev reads the state once and answers each question **independently**: one question's wording can't leak into another's answer, and asking five questions together gives the same probabilities, to rounding, as asking them one at a time. That makes batching free, so ask everything you need about a state in one call.
+
+## Answers
+
+The response has one entry in `answers` for each question ID you sent (values here are illustrative):
+
+```json
+{
+  "model": "kev-latest",
+  "answers": {
+    "your_id": { "type": "choice", "choice": "billing", "confidence": 0.62,
+                 "probabilities": { "billing": 0.75, "shipping": 0.15, "returns": 0.10 } },
+    "another": { "type": "noul", "noul": 0.08 }
+  },
+  "usage": { "input_tokens": 88, "output_tokens": 97 },
+  "latency_ms": 132
+}
+```
+
+The shape of each answer depends on its question type. The next page covers all three.
+
+<Callout title="Usage and billing">
+  `usage.input_tokens` counts the tokens Kev read. Kev doesn't generate tokens, so `usage.output_tokens` counts the tokens in the serialized answers, for compatibility with TypeSafe's response format. When you self-host, you pay for GPU time, not tokens.
+</Callout>

@@ -1,0 +1,65 @@
+---
+title: Evaluation protocol
+description: Frozen suites, locked tests, pre-registered gates, paired record-clustered bootstraps, and traceable claims.
+---
+
+Small eval sets and many candidate checkpoints make it easy to fool yourself. The protocol below exists to make that hard.
+
+## Frozen suites
+
+A suite is `evals/<version>/<name>/{manifest.json, *.jsonl}`. The manifest pins:
+
+- dataset IDs and revisions,
+- the base-model tokenizers the suite was admitted against (records must encode without truncation under all of them),
+- the sha256 of every partition.
+
+`load_split` verifies hashes on load; large partitions are mirrored on the Hub dataset `jaredpalmer/kev-suites` at a pinned revision. **Frozen files are never modified**; new data is a new version.
+
+| Suite | Role |
+| --- | --- |
+| `decision-v7` | Training recipe; `development` for in-distribution selection, `calibration` held out |
+| `transfer-v4` | Out-of-domain: six never-trained sources + held-out rule structures; the headline "new sources" numbers |
+| `transfer-v9` | Adds MMLU-Pro, buried states (long-context), and unknowable items |
+| `external/*` | Third-party items with published Jev numbers: SemIf, scienthoon, WANLI, TypeSafe public, ekzhang MMLU-Pro |
+
+## Partitions and the locked test
+
+- **development** selects models, fits temperatures, and tunes thresholds.
+- **test** is locked. `kev.benchmark` refuses to read it without `--allow-test`, and each candidate reads it **at most once**. Locked reads live in `runs/locked/`.
+- Temperatures are fitted on in-distribution development rows only, never on transfer or test.
+
+Jev was scored on development items only, so Jev comparisons are against Kev's development numbers.
+
+## Pre-registration
+
+Each research round in [`PLAN.md`](https://github.com/jaredpalmer/kev/blob/main/PLAN.md) states candidates, metrics and adopt-if gates **before** training or reading results, and records negatives with the same prominence as wins. Example gate (round 4, rotation averaging): "becomes a serving option if transfer accuracy improves ≥ +0.5 pp with a paired CI lower bound ≥ 0, or the permutation flip rate halves." Registrations that turn out to be ill-posed are corrected in writing, not silently.
+
+## Statistics
+
+- **Paired, record-clustered bootstrap.** `kev.compare --candidate A --reference B` resamples records (not questions, since questions within a record are correlated) and reports the paired difference with a 95% interval. The default is 1,000 resamples; release confirmations have used 2,000.
+- **Incumbent rule.** In automated search, a challenger replaces the champion only if its paired per-task macro delta on transfer accuracy has a 95% lower bound ≥ −1 pp and a positive point estimate. At 0.6B the interval is about ±5 pp wide, so small "improvements" don't displace a champion.
+- **Resolution matters.** On ~650 transfer questions, coverage at a 5% error budget has intervals tens of points wide; round-4 findings note that it can't resolve ±5 pp. Brier and confident-error rate are more stable and increasingly the registered metrics.
+
+## Metrics reported per run
+
+`kev.benchmark` writes `rows.json` (per question, with raw logits and the inference temperature) and `report.json`:
+
+- accuracy, NLL, multi-class Brier, 10-bin ECE on $$p_{\max}$$, confident-error rate at $$p_{\max} \ge 0.9$$;
+- selective prediction: risk–coverage curve, AURC, coverage at an error budget (in-sample maximum);
+- per-task and per-source breakdowns;
+- permutation flip rate and mean max $$\Delta p$$ on permuted Choice items;
+- question-isolation deltas;
+- an unknowable report (how often the model is confident on questions the state can't answer).
+
+Because raw logits are saved, any temperature can be applied after the fact (`kev.calibrate --rows`).
+
+## Claims are traceable
+
+Published README and model-card numbers are listed in `docs/claims.json` with the report each comes from. `scripts/verify_claims.py` runs in CI (`tests/test_conventions.py`) and fails if a published number doesn't match a committed report. Every `result.json` carries the suite hash, code hashes and git commit.
+
+## Known weaknesses of the protocol
+
+- One seed per configuration for most comparisons; three seeds of one earlier 4B recipe (Qwen3 generation) scored 0.773 / 0.790 / 0.770 on transfer, a 2-point spread.
+- External gates in round 5 were point estimates on 89–256 questions.
+- The transfer suite is 764 development records; per-source cells have tens of items.
+- Jev is a moving target scored at one point in time.

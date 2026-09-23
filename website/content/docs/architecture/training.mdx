@@ -1,0 +1,60 @@
+---
+title: Training
+description: The decision-v7 recipe, augmentations, LoRA targets and delta fine-tunes behind the released checkpoints.
+---
+
+## Data
+
+The released family trains on the frozen suite `evals/v7/decision-v7`:
+
+| Component | Records | What it teaches |
+| --- | ---: | --- |
+| Public classification and NLI data | 10,000 (1,000 per source) | Reading comprehension, entailment, topic, sentiment, intent |
+| Policy minimal pairs | 896, over nine template families | Applying a stated rule where one detail flips the answer |
+| Generated rule structures | 1,680, from 60 structures in four rendering styles | Compositional logic (`(A or B) and C`, `if A then not B else C`) |
+
+The ten public sources are BANKING77, BoolQ, AG News, MultiNLI, SST-5, Yelp Review Full, TREC, DBpedia-14, Amazon Reviews (en) and IMDB. Each is cast into System One form: the passage becomes the state, the task becomes a Noul, Choice or Score question. No Jev outputs were used anywhere in training.
+
+The suite is frozen: its manifest pins dataset and base-model revisions and the sha256 of every partition (`train`, `calibration`, `development`, `test`). Changing data means a new suite version, not an edit.
+
+## Augmentations
+
+Applied on the fly per training record:
+
+- **Option permutation.** Choice options are shuffled, so position isn't a usable cue.
+- **None-of-the-above insertion** (`--p_none`, default 0.1) and **none with distractors** (`--p_none_distract`, 0.12).
+- **Distractor options** (`--p_distract`).
+- **None minimal pairs** (`--p_none_pair 0.25` in the release): for a Choice with 3+ options, emit the record twice, once with the true option present (none is wrong) and once with it removed (the same none option is right). Everything else is identical, so the only usable signal is whether the evidence matches an option. This targets the shortcut of picking "none" by surface features.
+
+## Optimization
+
+| Setting | Kev-0.8B | Kev-4B / Kev-9B |
+| --- | --- | --- |
+| Base | Qwen3.5-0.8B-Base | Qwen3.5-4B-Base / Qwen3.5-9B-Base (pinned revisions) |
+| LoRA | $$r = 16$$, $$\alpha = 32$$, dropout 0.05 | same |
+| Peak LR | $$1 \times 10^{-4}$$ | $$5 \times 10^{-5}$$ |
+| Schedule | OneCycle, 10% warmup | same |
+| Effective batch | 8 | 8 (4 × 2 accumulation) |
+| Epochs | 2 | 2 |
+| Precision | bf16 autocast, fp32 master weights | same, plus gradient checkpointing |
+
+LoRA targets are `q/k/v/o_proj`, `gate/up/down_proj` and, on hybrid bases, the DeltaNet projections `in_proj_qkv/z/a/b` and `out_proj` (45.4M trainable parameters at 9B). The pointer head trains from scratch. The rest of the backbone is frozen.
+
+The 9B run took 91 minutes on one H100 (peak 39.5 GB).
+
+## Delta fine-tunes
+
+`kev.train --init_from <checkpoint>` warm-starts the adapter and head from a released checkpoint after checking that the source is compatible (for example, the same LoRA rank), and records the source's hashes in the new run's provenance. A delta is a controlled change: one fixed starting point, one data addition, minutes of compute.
+
+The released checkpoints are v7 plus one such delta (one epoch, lr $$2 \times 10^{-5}$$, about 15 minutes on an H100 for 9B) on 1,425 generated records mixed with 2,000 replayed training records:
+
+- 900 date-bearing policy cases: a third plain, a third with a relational day-count sentence, a third with a `date_facts` field.
+- 255 cases with the deciding sentence removed and a **uniform soft target** over the options, plus 270 intact controls. This teaches the model to spread probability when the state doesn't contain the answer.
+
+Against the pre-delta Kev-9B on the locked test: +1.8 points [+0.8, +2.9], Brier 0.243 → 0.237, `deadline` 0.72 → 0.88. Pre-delta weights are kept at Hub tag `v7-base`.
+
+The user-facing version of this, for fine-tuning on your own labels, is in [Fine-tuning](/docs/guides/fine-tuning).
+
+## What training costs the base
+
+LoRA on this format erodes one skill measurably: date arithmetic. The untrained Qwen3.5-9B-Base scores 0.82 on the `deadline` task (zero-shot letter logits); after v7 training it's 0.72. The readout isn't the issue: giving the model the day count yields 0.93–1.0. A retention ablation that froze the DeltaNet projections was negative, and a post-trained (instruct) 9B lost it faster (0.70 → 0.47). Knowledge (MMLU) is not eroded; the untrained base already scores what Kev scores.

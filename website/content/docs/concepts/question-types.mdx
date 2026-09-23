@@ -1,0 +1,131 @@
+---
+title: Question types
+description: Noul for yes/no, Choice for picking one option, Score for rating on a scale.
+icon: ListChecks
+---
+
+Kev understands three kinds of question. Picking the right one is most of the work of using Kev well. (The answer values on this page are illustrative, not real model output.)
+
+| Type | Use it when the answer is… | Example | You get back |
+| --- | --- | --- | --- |
+| [Noul](#noul) | yes or no | Is this spam? | the probability of yes |
+| [Choice](#choice) | one of a few named options | Which team should handle this? | the best option, a probability per option, and a confidence |
+| [Score](#score) | a position on an ordered scale | How urgent is this? | an average level, a probability per level, and a confidence |
+
+## Noul
+
+Noul is a yes/no question. The answer is a single number: the probability that the answer is yes.
+
+```json title="Request"
+"is_refund_request": {
+  "type": "noul",
+  "instructions": "Is the customer asking for a refund?"
+}
+```
+
+```json title="Answer"
+"is_refund_request": { "type": "noul", "noul": 0.94 }
+```
+
+`noul: 0.94` means "94% likely yes". A value near 0.5 means Kev can't tell. There's no separate confidence field, because the probability already says how sure Kev is: 0.02 and 0.98 are both confident answers.
+
+You can optionally describe what counts as yes and no. This helps when "yes" needs a precise definition:
+
+```json
+"needs_escalation": {
+  "type": "noul",
+  "instructions": "Should this go to a senior agent?",
+  "criteria": {
+    "true": "Legal threats, safety issues, or a customer who has already been refunded once",
+    "false": "Everything else"
+  }
+}
+```
+
+<Callout type="warn" title="Using the Vercel AI SDK?">
+  The AI SDK calls this type `"boolean"` and returns `probability` instead of `noul`. Same concept, different names. See [Vercel AI SDK](/docs/integrations/vercel-ai-sdk).
+</Callout>
+
+## Choice
+
+Choice picks one option from a list you provide. Each option has a name (what your code sees) and an optional description (what helps Kev decide).
+
+```json title="Request"
+"department": {
+  "type": "choice",
+  "instructions": "Which team should handle this ticket?",
+  "criteria": {
+    "billing": "Charges, invoices, refunds, payment methods",
+    "shipping": "Delivery status, delays, lost packages",
+    "account": "Login, password, profile settings"
+  }
+}
+```
+
+```json title="Answer"
+"department": {
+  "type": "choice",
+  "choice": "billing",
+  "confidence": 0.62,
+  "probabilities": { "billing": 0.75, "shipping": 0.15, "account": 0.10 }
+}
+```
+
+- `choice` is the option with the highest probability.
+- `probabilities` has one entry per option and adds up to 1.
+- `confidence` is how far the top probability is above a random guess, from 0 to 1. See [Probabilities and confidence](/docs/concepts/probabilities-and-confidence).
+
+Set a description to `null` if the name says it all: `{"positive": null, "negative": null, "neutral": null}`. You can have up to 255 options, but a handful of clearly different options works best.
+
+**Options should be mutually exclusive.** If a ticket can be about billing _and_ shipping, a single Choice forces Kev to split probability between them. Either add a `"multiple"` option or ask two Noul questions ("Is this about billing?", "Is this about shipping?").
+
+## Score
+
+Score rates something on an ordered scale you define, from lowest to highest.
+
+```json title="Request"
+"urgency": {
+  "type": "score",
+  "instructions": "How urgent is this ticket?",
+  "criteria": ["Can wait a week", "Should be handled this week", "Needs a reply today"]
+}
+```
+
+```json title="Answer"
+"urgency": {
+  "type": "score",
+  "score": 1.7,
+  "confidence": 0.85,
+  "legend": { "0": "Can wait a week", "1": "Should be handled this week", "2": "Needs a reply today" },
+  "probabilities": { "0": 0.05, "1": 0.2, "2": 0.75 }
+}
+```
+
+- `score` is the probability-weighted average level, counting from 0. Here, 1.7 means "leaning strongly towards today". It's a decimal, so round or threshold it yourself.
+- `probabilities` is keyed by level number. `legend` maps each number back to your text.
+- `confidence` is higher when the probability is concentrated on or next to the most likely level. It's `1 − (average distance from the most likely level) ÷ (levels − 1)`, so here `1 − (0.05×2 + 0.2×1) ÷ 2 = 0.85`.
+
+Use Score instead of Choice whenever the options have a natural order. "Low, medium, high" is a Score; "billing, shipping, account" is a Choice. Score gives you a number you can sort, average and threshold, and the order itself tells Kev something about the question.
+
+## Mixing types in one request
+
+A request can contain any mix of question types. Kev reads the state once and answers every question independently, so it's cheaper and just as accurate to send them together:
+
+```json
+"questions": {
+  "department": { "type": "choice", "instructions": "Which team?", "criteria": { … } },
+  "urgency":    { "type": "score",  "instructions": "How urgent?", "criteria": [ … ] },
+  "is_angry":   { "type": "noul",   "instructions": "Is the customer angry?" }
+}
+```
+
+## Instructions and criteria can be structured too
+
+Like the state, `instructions` and each criterion can be a string, an object or an array. Kev turns them into labeled text the same way. This is handy for a criterion with examples:
+
+```json
+"billing": {
+  "definition": "Anything about money leaving the customer's account",
+  "examples": ["Charged twice", "Refund hasn't arrived", "Update my card"]
+}
+```

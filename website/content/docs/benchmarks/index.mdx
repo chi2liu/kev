@@ -1,0 +1,120 @@
+---
+title: Results
+description: How accurate each Kev model is, on what data, and how the numbers were produced.
+icon: ChartColumn
+---
+
+A benchmark is a fixed set of questions with known answers. We ask the model every question and count how often it's right. The numbers on this page are only as meaningful as the benchmark behind them, so this page says exactly which data each number comes from.
+
+## The short version
+
+- On data like its training data, Kev-4B and Kev-9B are right about **87%** of the time. Jev scores 84.5% on the same items.
+- On kinds of data Kev never trained on, Kev-9B is right **82–85%** of the time and Kev-4B **80–84%**. Jev scores 85.7%.
+- Kev's probabilities are about as trustworthy as Jev's on these benchmarks, but Jev can safely automate a larger share of decisions.
+- Jev is much better at questions that need general knowledge (trivia, exam questions).
+
+## Two kinds of data
+
+| Name | What it is | Suite |
+| --- | --- | --- |
+| **Trained sources** | Held-out examples from the same datasets Kev was trained on. Tests whether Kev learned the task. | `decision-v7` |
+| **New sources** | Datasets and policy rule types Kev never saw in training. Tests whether Kev works on your data, which it also never saw. | `transfer-v4` |
+
+"New sources" is the number to look at for your own use case.
+
+## Two kinds of splits
+
+Every suite has a **development** partition and a locked **test** partition.
+
+- **Development** is used to pick between training runs. Because we choose the best run by looking at it, development scores are slightly optimistic.
+- **Test** is read once per released model, after it's been chosen. Nobody tuned anything by looking at it, so it's the unbiased number.
+
+Each cell below is **development / test**. Jev was scored through its public API on development only.
+
+## Accuracy
+
+| Model | Trained sources | New sources | Brier, new sources (lower is better) |
+| --- | --- | --- | --- |
+| Kev-0.8B | 0.825 / 0.834 | 0.652 / 0.684 | 0.499 / 0.460 |
+| Kev-4B | 0.872 / 0.871 | 0.797 / 0.837 | 0.299 / 0.255 |
+| Kev-9B | 0.872 / 0.874 | **0.822 / 0.852** | **0.286 / 0.237** |
+| Jev | 0.845 / – | 0.857 / – | 0.211 / – |
+
+Brier numbers in this table are for raw, uncalibrated probabilities. With the built-in calibration, new-source development Brier is 0.430 for Kev-0.8B and 0.264 for both Kev-4B and Kev-9B. [Metrics](/docs/benchmarks/metrics) explains what Brier measures.
+
+<BarChart
+  title="New-source accuracy (development)"
+  min={0.5}
+  max={0.9}
+  digits={3}
+  series={[{ label: "Accuracy", color: "var(--color-kev-4b)" }]}
+  groups={[
+    { label: "Kev-0.8B", values: [0.652] },
+    { label: "Kev-4B", values: [0.797] },
+    { label: "Kev-9B", values: [0.822] },
+    { label: "Jev", values: [0.857] },
+  ]}
+  caption="transfer-v4 development partition, 764 records. The same frozen items for every model."
+/>
+
+## Calibration and automation
+
+These are on new-source development data, with each Kev model's built-in calibration.
+
+| | Kev-0.8B | Kev-4B | Kev-9B | Jev |
+| --- | --- | --- | --- | --- |
+| Calibration error (ECE, lower is better) | 0.054 | **0.040** | 0.042 | 0.049 |
+| Confident errors (wrong with probability ≥ 0.9) | 0.3% | 2.6% | 4.0% | 3.7% |
+| Share you can automate at ≤ 5% error | – | 0.57 | 0.45 | **0.70** |
+
+Calibration error measures how far "0.8" is from "right 80% of the time". A confident error is the worst kind of mistake: the model was sure and wrong. The last row is the practical one: if you only accept answers above some threshold and want at most 5% of accepted answers wrong, what share of decisions clear it? Kev-0.8B's number wasn't published with calibration on (its raw value is 0.23).
+
+## By task
+
+New-source development accuracy, Kev-9B vs Jev:
+
+<BarChart
+  title="Kev-9B vs Jev by source"
+  min={0.3}
+  max={1}
+  digits={2}
+  series={[
+    { label: "Kev-9B", color: "var(--color-kev-9b)" },
+    { label: "Jev", color: "var(--color-kev-jev)" },
+  ]}
+  groups={[
+    { label: "QNLI (does the text answer it?)", values: [0.93, 0.93] },
+    { label: "SciQ (science questions)", values: [0.96, 0.99] },
+    { label: "Offensive tweets", values: [0.78, 0.81] },
+    { label: "PAWS (paraphrase)", values: [0.76, 0.79] },
+    { label: "MMLU (general knowledge)", values: [0.74, 0.9] },
+    { label: "Emotion", values: [0.6, 0.59] },
+    { label: "Deadline rules (dates)", values: [0.8, 0.93] },
+    { label: "(A and B) or not C rules", values: [0.88, 0.97] },
+    { label: "If A then not B else C rules", values: [0.91, 0.78] },
+  ]}
+  caption="Per-source accuracy from the Kev-9B model card. Deadline rises to 0.90 with KEV_DATE_FACTS=1."
+/>
+
+The pattern: Kev is close to Jev when the answer is in the text, and far behind when the question needs facts about the world.
+
+## Other people's benchmarks
+
+These suites were built by other people to test Jev, so Kev had no say in how they were designed:
+
+| Suite | Kev-9B | Kev-4B | Jev |
+| --- | --- | --- | --- |
+| [SemIf](https://github.com/TheoLeeCJ/SemIf) authored decisions (144) | 0.917 | 0.896 | 0.965 |
+| [scienthoon](https://github.com/scienthoon/jev-ood-calibration) support-ticket routing (900) | 0.952 | 0.918 | 0.897 |
+| WANLI (256, does the text support the claim?) | 0.703 | 0.695 | 0.758 |
+| TypeSafe public eval questions (89 answered of 102), agreement | 0.809 | 0.856 | 0.891 |
+| MMLU-Pro sample (1,000) | 0.511 | 0.468 | 0.835 |
+
+SemIf numbers for Kev are from before the 2026-09-21 update. On TypeSafe's questions, 13 of 102 documents are longer than Kev's 8,192-token limit and are rejected; counting those as wrong, agreement is 0.728 (Kev-9B) and 0.770 (Kev-4B).
+
+## Where these numbers come from
+
+- Every model was scored on the same frozen items. Suite manifests pin dataset revisions and the SHA-256 of every partition.
+- Published numbers use fp32 evaluation. The default server uses bf16, which is faster and gives the same answers in practice, but isn't what was measured.
+- Every number in the Kev README and model cards is checked in CI against the committed report it came from (`docs/claims.json`, `scripts/verify_claims.py`).
+- The full per-checkpoint tables are in the [model cards](https://github.com/jaredpalmer/kev/tree/main/docs/model-cards).

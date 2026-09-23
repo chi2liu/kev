@@ -1,0 +1,58 @@
+---
+title: Open problems
+description: The measured gaps, what has been tried against each, and what the evidence says to try next.
+---
+
+Numbers below are from the research log, [`PLAN.md`](https://github.com/jaredpalmer/kev/blob/main/PLAN.md), which links every run directory. Intervals are paired, record-clustered 95% bootstraps.
+
+## Long states
+
+The largest gap measured anywhere in the project. `evals/round4/longstate-v1` buries decision-v7 development states among unrelated records to ~1k, 2k and 4k tokens and pairs each with the same question unburied.
+
+| Released checkpoint | ~1k | ~2k | ~4k |
+| --- | ---: | ---: | ---: |
+| Kev-4B, burial cost | −26 pp | −31 pp | −42 pp |
+| Kev-9B, burial cost | −22 pp | −33 pp | −43 pp |
+
+Scale doesn't help. It's a data problem: training states are capped at 384 tokens.
+
+- A one-epoch Kev-4B delta on 1,800 buried records (`--max_state 4608`) plus 2,000 replay cut the cost to **−8 / −14 / −30 pp**, +15.2 pp [+9.6, +20.2] over the release, with no measurable short-state cost against the release. A matched delta on the same records unburied changed nothing, so the gain is from length, not extra data.
+- Round 5 combined long-state records with ambiguity soft targets at all three sizes. On a fresh long-state panel: 9B 0.572 → 0.739, 4B 0.538 → 0.738, 0.8B 0.445 → 0.548. **No size was released**: Kev-9B missed a pre-registered WANLI non-inferiority gate by three questions; 4B and 0.8B lost accuracy on external routing suites.
+
+Next: 4k stays weak with ~600 training records at that length, so the length mix is the lever. A fresh panel must be registered before the next read.
+
+## Ranking quality
+
+Calibration (the level of probabilities) is good in distribution. **Ranking** (whether errors get lower confidence than correct answers) is what confidence routing needs, and it's where Jev leads: coverage at ≤5% error 0.45 (Kev-9B) and 0.57 (Kev-4B) against 0.70 on the new-source development set.
+
+Tried and negative:
+
+| Intervention | Result |
+| --- | --- |
+| Label smoothing, Brier, focal loss | Negative in the round-3 screen |
+| Per-(type, option count) temperatures | Worse out of domain |
+| Averaging two seeds' probabilities | 9B coverage +3.4 pp, CI includes 0; 4B Brier worse |
+| Logistic reliability head on $$p_{\max}$$, margin, entropy, $$\log K$$, type | AURC worse at 9B and 4B |
+| Distilling Kev-9B into Kev-0.8B | Brier worse than a matched hard-label delta |
+
+Promising: **ambiguity soft targets**. 1,876 training questions where an untrained post-trained 9B disagrees with the label at $$p \ge 0.6$$, target = ½ label + ½ teacher, as a one-epoch delta. At 9B: Brier 0.264 → 0.252 [−0.022, −0.002], ECE 0.042 → 0.021, confident errors 4.0% → 1.7%, and +2.0 pp accuracy over a matched hard-label delta. Afterwards the fitted temperature is near 1 (1.12 vs 2.30), meaning the model's own outputs are calibrated. It missed its registered coverage gate (+4.7 pp against +5), which the sample can't resolve anyway.
+
+## Knowledge
+
+MMLU 0.74 and MMLU-Pro 0.515 for Kev-9B against 0.90 and 0.84 for Jev. The untrained Qwen3.5-9B-Base scores the same, and a Kev on Qwen3.5-35B-A3B didn't move MMLU-Pro. This is base capacity; Kev training neither causes nor fixes it. The planned next step is a probe of a 27B-class base, decided on MMLU-Pro before any training spend.
+
+## Date arithmetic
+
+Training on this format erodes the base's ability to subtract dates (0.82 → 0.72 at 9B); the readout is intact (given the day count, 0.93–1.0). Preprocessing (`KEV_DATE_FACTS=1`) recovers most of it on date-bearing states but was not made the default: on TypeSafe's long public documents, the added sentences pushed seven more past the context limit and lowered accuracy on the rest. A post-trained base erodes faster. Open question: does a question-side-only LoRA preserve it?
+
+## Option order
+
+Within a question, options attend causally to earlier options, so order matters. Permutation flip rate on the transfer suite: 2.8% (9B), 8.3% (4B). Rotation averaging at test time removes most of it (0% and 2.8%) at 2–3× latency and no accuracy change. Architecturally isolating options (shared positions, sub-branches) costs 5.8 pp at 4B and needs the packed mask, so it's unavailable on hybrid bases.
+
+## Robustness to phrasing
+
+Assertion-style Noul instructions ("The customer sounds angry." rather than "Is the customer angry?") drove Kev-4B to 0.79 against Jev's 0.91 on scienthoon's support tickets. A targeted delta on assertion phrasing alone was negative.
+
+## Reproducing any of this
+
+Every row in `PLAN.md` links a run directory with `report.json` and, for external suites, committed `rows.json`. `kev.compare` recomputes the paired intervals; `kev.calibrate --rows` refits temperatures. See [Evaluation protocol](/docs/architecture/evaluation-protocol).

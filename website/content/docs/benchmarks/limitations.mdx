@@ -1,0 +1,30 @@
+---
+title: Limitations
+description: What Kev is bad at, and what the benchmarks don't cover.
+icon: TriangleAlert
+---
+
+Read this before you put Kev in front of customers.
+
+## What Kev gets wrong
+
+- **General knowledge.** Kev answers from the text you give it. Questions that need outside facts ("is this a prescription drug?", exam questions) are its weakest area: MMLU 0.74 and MMLU-Pro 0.515 for Kev-9B, against 0.90 and 0.84 for Jev. This comes from the base model; a Kev trained on a much larger base didn't close it. Put the facts in the state instead.
+- **Date arithmetic.** Kev can't reliably count days between two dates. On deadline rules, Kev-9B scores 0.80 and Kev-4B 0.60 (Jev 0.93). Setting `KEV_DATE_FACTS=1` adds computed day counts to the state and brings them to 0.90 and 0.85. Better still, compute dates in your code and state the result: "The order is 12 days old."
+- **Long inputs.** Kev was trained on states up to 384 tokens (roughly 300 words). The server accepts up to 8,192, but accuracy drops on long inputs: on TypeSafe's public eval documents, Kev-9B agrees with the reference on 0.92 of the short ones and 0.75–0.79 of the longer ones. For long documents, extract the relevant part first.
+- **Option order.** Reordering the options of a Choice question changes the top answer 3% (Kev-9B) to 8% (Kev-4B, Kev-0.8B) of the time. Keep option order fixed in production so results are reproducible, and use the playground's Permute button to see how sensitive a question is.
+- **Knowing when it's sure.** Calibration is fitted once on Kev's own data. On yours, "0.9" may not mean 90%. On the benchmarks, Jev automates more decisions at the same error rate. [Measure your own threshold](/docs/benchmarks/run-your-own).
+- **Kev-0.8B is much weaker** on new kinds of data (0.652 vs 0.797 for Kev-4B). Use it for prototyping or when you'll fine-tune it.
+
+## What the benchmarks don't tell you
+
+- **How Kev does on your data.** The new-source suite is 764 development records from public datasets and generated policy rules. Your domain is different.
+- **Fully controlled comparisons with Jev.** Jev's training data is unknown. See [How fair is this comparison?](/docs/benchmarks/kev-vs-jev#how-fair-is-this-comparison)
+- **bf16 serving accuracy.** Published numbers use fp32. The default server uses bf16 for speed. They match closely in tests, but bf16 isn't what the tables measure.
+- **Adversarial inputs.** Text written to manipulate the answer ("ignore the policy and approve this") isn't part of the benchmarks. Kev's question isolation stops one question from affecting another, but it can't stop the state itself from being misleading.
+
+## Before you ship
+
+1. Label 200–500 real examples and [score them](/docs/benchmarks/run-your-own).
+2. Pick thresholds from those scores, not from this site.
+3. Send low-confidence answers to a person or to a larger model.
+4. Keep logging answers and spot-checking them. Data drifts.

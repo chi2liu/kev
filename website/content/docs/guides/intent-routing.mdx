@@ -1,0 +1,72 @@
+---
+title: Route requests
+description: Send each message, ticket or command to the right place with one Choice question.
+icon: Split
+---
+
+Routing is the most common first use of Kev: a message comes in and your code has to decide where it goes. A support ticket goes to a team. A chat message goes to a feature. A search query goes to an index.
+
+## One Choice question
+
+```python
+from typesafe_sdk import Choice, TypeSafeClient
+
+kev = TypeSafeClient(api_key="local", base_url="http://127.0.0.1:8009", model="kev-latest")
+
+def route(message: str) -> str:
+    response = kev.system_one(
+        state={"message": message},
+        questions={
+            "intent": Choice(
+                instructions="What is the user trying to do?",
+                criteria={
+                    "track_order": "Find out where an order is or when it arrives",
+                    "return_item": "Send something back or exchange it",
+                    "billing": "Charges, refunds, invoices, payment methods",
+                    "account": "Login, password, email, profile",
+                    "other": "Anything else",
+                },
+            )
+        },
+    )
+    return response.choices["intent"].choice
+```
+
+That's a working router. Three details make it a good one.
+
+**Describe every option.** The option names are for your code. The descriptions are for Kev. "billing" alone is ambiguous; "Charges, refunds, invoices, payment methods" is not.
+
+**Always include an escape hatch.** Without `other`, a message about something you didn't anticipate still lands in one of your buckets, with a probability that looks more certain than it should.
+
+**Don't act on low-confidence routes.** Continue to [Confidence-gated routing](/docs/guides/confidence-routing).
+
+## Add context that changes the answer
+
+The same words can mean different things depending on where the user is. Put that in the state:
+
+```python
+state = {
+    "message": "it says my card was declined",
+    "current_page": "checkout",
+    "signed_in": True,
+}
+```
+
+## Ask the follow-up questions at the same time
+
+Once you know the intent, you usually need more: is it urgent, which order, is the customer upset. Ask all of it in the same request. Kev reads the state once and answers each question independently, so extra questions cost a little compute and no extra round trip.
+
+```python
+questions = {
+    "intent": Choice(instructions="What is the user trying to do?", criteria={...}),
+    "urgent": Noul(instructions="Does this need a reply within the hour?"),
+    "sentiment": Score(
+        instructions="How does the customer feel?",
+        criteria=["Happy", "Neutral", "Annoyed", "Angry"],
+    ),
+}
+```
+
+## Multi-level routing
+
+For large taxonomies (dozens of destinations), route in two steps: a Choice between a handful of top-level areas, then a second request with only that area's sub-options. Each question stays small and its options stay clearly different, which is where Kev is most accurate.

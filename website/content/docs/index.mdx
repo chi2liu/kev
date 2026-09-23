@@ -1,0 +1,53 @@
+---
+title: What is Kev?
+description: A small, open model that answers typed questions about your data and tells you how sure it is.
+icon: Sparkles
+---
+
+Kev is a family of open models that make **decisions**, not text. You hand it a piece of data (a support ticket, a form, a log line, a JSON object) and a few questions about it. It hands back an answer to each question, plus a probability for every possible answer.
+
+```text
+state      "Shoes arrived two weeks late and in the wrong size. Also I see two charges on my card."
+question   Which team should handle this?  returns | shipping | billing
+answer     returns   (returns 0.47, shipping 0.28, billing 0.25)
+```
+
+That's the whole product. There is no chat, no prompt engineering loop and no parsing of free-form output. You get a value your code can `switch` on and a number that says how much to trust it.
+
+## Why not just ask a chatbot?
+
+You can ask a chat model "which team should handle this ticket?" and it will usually give a sensible answer. The problems start when you try to build on it:
+
+- **The output is text.** You have to parse "I'd say billing, although it could also be shipping" into one of your labels, and handle the cases where it invents a label you don't have.
+- **It can't tell you how sure it is.** Asking a chat model for a confidence score gets you a number it wrote, not a number it measured. "90% sure" from a chatbot isn't right 90% of the time.
+- **It's slow and expensive for what it does.** Generating a paragraph to pick one of three options is a lot of work per decision.
+
+Kev is built for exactly this job. It reads your data once, looks at your answer options directly, and scores each one. The scores become probabilities, and those probabilities are **calibrated**: on the benchmarks Kev was measured on, answers it gives 0.8 are right roughly 80% of the time. Your data may differ, so measure before you trust a threshold. See [Probabilities and confidence](/docs/concepts/probabilities-and-confidence) for what that does and doesn't promise.
+
+## What Kev is good for
+
+Any place your product makes a judgment call about a piece of data and you'd like to automate the easy cases:
+
+- **Routing**: which team, queue, workflow or tool should handle this?
+- **Triage**: is this urgent? Is this spam? Does this break a policy?
+- **Scoring**: how frustrated is this customer? How complete is this application?
+- **Gating**: is the model sure enough to act, or should a person look?
+
+The [guides](/docs/guides/intent-routing) walk through each of these with code.
+
+## What Kev is not good for
+
+- **Writing anything.** Kev never generates text. Use a chat model for replies, summaries and drafts.
+- **Trivia and world knowledge.** On knowledge exams (MMLU, MMLU-Pro) Kev is well behind Jev. See [Benchmarks](/docs/benchmarks).
+- **Very long documents.** Kev was trained on short states. It accepts up to 8,192 tokens per question, but accuracy drops on long inputs. See [Limitations](/docs/benchmarks/limitations).
+
+## Kev and Jev
+
+[Jev](https://docs.typesafe.ai/introduction) is TypeSafe's hosted decision model and the inspiration for Kev. Kev speaks the same API, so the official TypeSafe SDKs work against it by changing the base URL. The differences are ownership and cost: Kev's weights are Apache-2.0, you can run them on your laptop or your own GPU, and you can fine-tune them on your data. Jev is hosted, currently more accurate on new kinds of data, and you don't have to run anything. [Kev vs Jev](/docs/benchmarks/kev-vs-jev) has the honest comparison.
+
+<Cards>
+  <Card title="Quickstart" href="/docs/quickstart" description="Run Kev locally and send your first request in five minutes." />
+  <Card title="Deploy on Modal" href="/docs/deploy/modal" description="Get your own HTTPS endpoint with one command." />
+  <Card title="Use the TypeSafe SDK" href="/docs/integrations/typesafe-python" description="Point the official SDK at Kev." />
+  <Card title="Vercel AI SDK" href="/docs/integrations/vercel-ai-sdk" description="Use Kev with experimental_evaluate()." />
+</Cards>

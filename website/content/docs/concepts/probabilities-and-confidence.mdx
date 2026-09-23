@@ -1,0 +1,82 @@
+---
+title: Probabilities and confidence
+description: What Kev's numbers mean, what they promise, and how to set thresholds.
+icon: Gauge
+---
+
+Every Kev answer comes with numbers. They are the reason to use Kev instead of a chatbot, so it's worth understanding exactly what they mean.
+
+## Probabilities
+
+For every possible answer, Kev returns a probability between 0 and 1. The probabilities for one question add up to 1.
+
+```json
+"probabilities": { "billing": 0.75, "shipping": 0.15, "account": 0.10 }
+```
+
+Read this as: "if I saw many tickets like this one, about 75% of them would belong to billing."
+
+That reading only works if the probabilities are **calibrated**, meaning that when Kev says 0.75, it's right about 75% of the time. Most models aren't. Neural networks trained the usual way tend to be **overconfident**: they say 0.99 when they're right 85% of the time.
+
+Kev ships with a correction built in. Each checkpoint stores a single number, a **temperature** (between 2.1 and 2.4 for the released models), that softens overconfident probabilities. The temperature was fitted so that probabilities match observed accuracy on held-out data. It never changes which answer is picked; it only makes the numbers more honest.
+
+The effect is large. On datasets Kev never trained on, the share of answers that were wrong despite a probability of at least 0.9 dropped from 6.9% to 2.6% for Kev-4B and from 8.7% to 4.0% for Kev-9B. Jev's figure on the same questions is 3.7%.
+
+<Callout type="warn" title="Calibration is measured on benchmarks, not on your data">
+  The temperature was fitted on Kev's own development data. On data that looks very different (a new language, a niche domain, very long documents), probabilities can drift. Check them on a sample of your own labeled data before relying on a threshold. [Measure on your data](#measure-on-your-own-data) shows how.
+</Callout>
+
+## Confidence
+
+Choice and Score answers also have a `confidence` field. It's a single 0-to-1 summary of how decisive the probabilities are, so you can write one `if` statement instead of inspecting the whole distribution.
+
+For **Choice**, confidence measures how far the top probability is above a random guess. With 3 options, a random guess is 1/3. If the top option has probability 1/3, confidence is 0. If it has probability 1, confidence is 1.
+
+```text
+confidence = (top probability − 1/options) ÷ (1 − 1/options)
+```
+
+Drag the sliders to see how this plays out, and how a threshold turns it into a routing decision:
+
+<ConfidenceExplorer />
+
+For **Score**, confidence is higher when the probability is concentrated around one level. Mass on neighboring levels costs less than mass far away, because "medium or high" is a more coherent answer than "low or high".
+
+**Noul** answers don't have a confidence field. The probability of yes already says it: 0.97 and 0.03 are both confident; 0.5 is a coin flip.
+
+<Callout title="Confidence is a routing signal, not a guarantee">
+  A confidence of 0.8 doesn't mean "80% chance this is right". It means the probabilities are concentrated. Use it to decide _which_ answers to automate and which to send to a person. What fraction of automated answers turn out to be right is something you measure, not something the number promises.
+</Callout>
+
+## Setting a threshold
+
+The typical pattern is: act automatically when Kev is sure, and ask a person when it isn't.
+
+```python
+answer = response.choices["department"]
+if answer.confidence >= 0.6:
+    route_to(answer.choice)
+else:
+    send_to_triage_queue()
+```
+
+How do you pick 0.6? The honest answer is: from data. A threshold is a trade-off between **coverage** (how many decisions you automate) and **error rate** (how many of those are wrong). A higher threshold automates fewer decisions but makes fewer mistakes.
+
+On the new-source development set, as served, Kev-4B can automate 57% of decisions and Kev-9B 45% while keeping the error rate at or below 5%. Jev can automate 70% at the same error rate. Your numbers will be different, because they depend on how hard your questions are.
+
+## Measure on your own data
+
+You need a few hundred examples where you know the right answer. Then:
+
+1. Send each example to Kev and save the answer and its confidence.
+2. Sort by confidence, highest first.
+3. Walk down the list and track the error rate among the examples above each point.
+4. Pick the lowest threshold where the error rate is still acceptable for your product.
+
+Kev's benchmark tool does this for you and reports accuracy, calibration and coverage at a 5% error budget. Put your examples in a JSONL file in the [fine-tuning format](/docs/guides/fine-tuning#prepare-your-data) and run:
+
+```bash
+uv run python -m kev.benchmark --remote http://127.0.0.1:8009 --data my-labeled.jsonl --out runs/my-eval
+```
+
+`--remote` works against any Kev or TypeSafe-compatible endpoint, including a [Modal deployment](/docs/deploy/modal).

@@ -1,0 +1,119 @@
+---
+title: HTTP API reference
+description: Endpoints, request and response fields, errors and authentication.
+icon: Globe
+---
+
+Kev's API is compatible with TypeSafe's [System One API](https://docs.typesafe.ai/api). Any language that can send JSON over HTTP can use it.
+
+## Authentication
+
+A local server started with `python -m kev.serve` binds to `127.0.0.1` and is **open**: no key needed. Set `KEV_API_KEY` before starting it to require a bearer token on every `/v1/*` route:
+
+```bash
+KEV_API_KEY=$(openssl rand -hex 24) uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
+```
+
+```http
+Authorization: Bearer <KEV_API_KEY>
+```
+
+On [Modal](/docs/deploy/modal), set `KEV_API_KEY` at deploy time; without it the public URL is open to anyone who finds it.
+
+## `POST /v1/systemone`
+
+Answer questions about a state.
+
+<TypeTable
+  type={{
+    state: {
+      description: "The data to evaluate. A string, JSON object or array. Objects and arrays are turned into labeled text.",
+      type: "string | object | array",
+      required: true,
+    },
+    questions: {
+      description: "One or more questions, keyed by an ID you choose. IDs are returned in the response and never shown to the model.",
+      type: "Record<string, Question>",
+      required: true,
+    },
+    model: {
+      description: "The served model name.",
+      type: "string",
+      default: '"kev-latest"',
+    },
+  }}
+/>
+
+### Question
+
+<TypeTable
+  type={{
+    type: {
+      description: "The kind of answer you want.",
+      type: '"choice" | "noul" | "score"',
+      required: true,
+    },
+    instructions: {
+      description: "The question in plain language. String, object or array.",
+      type: "string | object | array",
+    },
+    criteria: {
+      description:
+        'choice: 1–255 options, name → description (or null). score: 1–255 level descriptions, lowest first. noul: optional { "true": …, "false": … } descriptions.',
+      type: "object | array",
+    },
+  }}
+/>
+
+### Answers
+
+| Type | Fields |
+| --- | --- |
+| `noul` | `noul`: probability the answer is yes, 0–1 |
+| `choice` | `choice`: the most likely option name. `probabilities`: option name → probability. `confidence`: 0–1 |
+| `score` | `score`: expected level, from 0 to (levels − 1). `probabilities`: level index → probability. `legend`: level index → your description. `confidence`: 0–1 |
+
+Probabilities and scores are rounded to 4 decimals. The response also has `model`, `usage` (`input_tokens`, `output_tokens`) and `latency_ms` (server-side time; Kev-specific). See [Question types](/docs/concepts/question-types) and [Probabilities and confidence](/docs/concepts/probabilities-and-confidence) for what each field means.
+
+Every response carries an `x-typesafe-request-id` header. Log it next to your own request IDs.
+
+### Example
+
+```bash
+curl -s https://<workspace>--kev-api.modal.run/v1/systemone \
+  -H "authorization: Bearer $KEV_API_KEY" \
+  -H 'content-type: application/json' \
+  -d '{
+    "state": {"message": "My card was charged twice."},
+    "questions": {
+      "billing": {"type": "noul", "instructions": "Is this about billing?"}
+    }
+  }'
+```
+
+## `GET /v1/models`
+
+Lists served models (`kev-latest`, plus a `jev-latest` card for SDK compatibility) and details about the loaded checkpoint: device, precision, calibration temperature and prefix-cache statistics. Useful as a health check.
+
+## Demo endpoints
+
+These exist for the playground and research. The SDKs don't call them.
+
+| Endpoint | What it does |
+| --- | --- |
+| `POST /v1/systemone/permute` | Runs one Choice question under several option orders (`n_perm`, 1–64, default 6) to show how much order affects the answer. |
+| `POST /v1/systemone/separate` | Runs each question in its own forward pass, to compare against the shared-state path. |
+
+## Errors
+
+| Status | Meaning |
+| --- | --- |
+| `401` | Missing or wrong bearer token (only when `KEV_API_KEY` is set). |
+| `422` | Invalid request: missing `state`, no questions, an unknown type, too many options, and so on. The body says which field. |
+| `303` | Modal only: the request waited more than about 150 seconds (usually a cold start). Follow the redirect to get the result. |
+
+## Limits
+
+- Up to 255 options per Choice or Score question.
+- Any number of questions per request. The server processes them in batches, so memory doesn't grow with the question count, and answers don't depend on how they were batched.
+- States up to 8,192 tokens. Kev was trained on much shorter states (up to 384 tokens), and accuracy drops on long inputs. See [Limitations](/docs/benchmarks/limitations).

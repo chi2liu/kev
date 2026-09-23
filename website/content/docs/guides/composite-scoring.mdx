@@ -1,0 +1,52 @@
+---
+title: Composite scoring
+description: Break a fuzzy quality judgment into small questions and combine them with weights you control.
+icon: Calculator
+---
+
+"Is this a good lead?" "Is this listing high quality?" "How well did the agent handle this call?" Asking Kev one vague question gets you one vague answer. Asking five specific questions and adding them up gets you a score you can explain, tune and trust.
+
+## Example: grading a support reply
+
+```python
+from typesafe_sdk import Noul, Score, TypeSafeClient
+
+kev = TypeSafeClient(api_key="local", base_url="http://127.0.0.1:8009", model="kev-latest")
+
+response = kev.system_one(
+    state={"customer_message": message, "agent_reply": reply},
+    questions={
+        "answers_question": Noul(instructions="Does the reply answer what the customer asked?"),
+        "next_step": Noul(instructions="Does the reply tell the customer what happens next?"),
+        "accurate_policy": Noul(instructions="Is the reply consistent with the policy in the state?"),
+        "tone": Score(
+            instructions="How is the tone of the reply?",
+            criteria=["Rude", "Curt", "Neutral", "Warm"],
+        ),
+    },
+)
+
+p = response.nouls
+tone = response.scores["tone"].score / 3  # 0..3 → 0..1
+
+quality = (
+    0.4 * p["answers_question"].noul
+    + 0.2 * p["next_step"].noul
+    + 0.3 * p["accurate_policy"].noul
+    + 0.1 * tone
+)
+```
+
+## Why this works better than one question
+
+- **Each part is checkable.** When a reply scores low, you can see which part failed.
+- **The weights are yours.** The business decides that accuracy matters more than tone, not the model.
+- **Probabilities, not verdicts.** Using `noul` directly, instead of rounding to yes/no, means an uncertain answer contributes an uncertain amount. A reply Kev is 55% sure answers the question doesn't get full credit.
+- **It's one request.** All four questions share the state and run together.
+
+## Tips
+
+- Use **Noul** for criteria that are met or not met, and **Score** for criteria with degrees.
+- Normalize Score answers by dividing by the number of levels minus one, so every part is on a 0–1 scale.
+- Hold the weights fixed while you check the composite against human ratings on a sample. Change one weight at a time.
+- For hard gates ("never approve a reply that promises a refund we don't offer"), don't hide them in a weighted sum. Check them separately with their own threshold.

@@ -1,0 +1,43 @@
+---
+title: Choosing a model
+description: Kev comes in three sizes. Start with Kev-4B.
+icon: Scale
+---
+
+All three Kev models are trained on the same data with the same recipe. They differ only in the size of the base model underneath, which trades memory and speed for accuracy.
+
+| Model | Hugging Face id | Good for | Modal GPU |
+| --- | --- | --- | --- |
+| **Kev-4B** | `jaredpalmer/kev-4b` | **The default.** Best accuracy per dollar. | L4 |
+| Kev-9B | `jaredpalmer/kev-9b` | Highest accuracy on new kinds of data. | A100-80GB |
+| Kev-0.8B | `jaredpalmer/kev-0.8b` | Prototyping, small machines, lowest cost. Noticeably weaker on unfamiliar data. | L4 |
+
+## How much accuracy do you give up?
+
+"Trained sources" are held-out examples from the same datasets Kev learned from. "New sources" are datasets and rule types Kev never saw during training, which is closer to what happens when you point it at your own product. Higher is better.
+
+<BarChart
+  title="Accuracy on new sources (locked test set)"
+  min={0.5}
+  max={1}
+  series={[{ label: "Accuracy", color: "var(--color-kev-4b)" }]}
+  groups={[
+    { label: "Kev-0.8B", values: [0.684] },
+    { label: "Kev-4B", values: [0.837] },
+    { label: "Kev-9B", values: [0.852] },
+  ]}
+  caption="transfer-v4 locked test, read once per released checkpoint. Jev hasn't been run on this set. Source: README model table."
+/>
+
+On trained sources the gap nearly disappears: Kev-4B and Kev-9B both score about 0.87, and Kev-0.8B about 0.83. The bigger models mainly buy robustness on data that doesn't look like its training set. All three ship with built-in calibration (see [Calibration](/docs/benchmarks/metrics#calibration)), so their probabilities match observed accuracy on the benchmark data; the smaller model is simply unsure more often, so fewer decisions clear a high threshold.
+
+## Rules of thumb
+
+- **Start with Kev-4B.** Switch only if you've measured a reason to.
+- **Move up to Kev-9B** if a wrong answer is expensive and the extra GPU cost is fine. On the new-source test set it's 1.5 points more accurate than Kev-4B, and it handles date arithmetic in policy rules much better (0.80 vs 0.60 on the deadline questions).
+- **Move down to Kev-0.8B** for prototyping, CPU-only machines, or very high volume on data close to what it was trained on.
+- **Fine-tune instead of upsizing** if your questions are specific to your business. A short fine-tune on a few hundred labeled examples usually helps more than any change to how you word the question. See [Fine-tuning](/docs/guides/fine-tuning).
+
+## Previous generation
+
+The first Kev family used Qwen3 bases. Those weights are still published (`jaredpalmer/kev-4b@qwen3`, `jaredpalmer/kev-8b`, `jaredpalmer/kev-0.6b`) and run faster on Apple Silicon through plain PyTorch, but they're less accurate and no longer developed.

@@ -1,0 +1,51 @@
+---
+title: Self-hosting
+description: Run Kev on your own GPU server or Mac, and the settings that matter.
+icon: Server
+---
+
+If you already have a GPU machine, or your data can't leave your network, run the server directly.
+
+## Requirements
+
+| Model | Works on | Memory (roughly) |
+| --- | --- | --- |
+| Kev-0.8B | CPU (slow), any recent GPU, Apple Silicon | a few GB |
+| Kev-4B | 24 GB GPU (L4, A10G, RTX 4090), Apple Silicon | ~10 GB in bf16 |
+| Kev-9B | 40–80 GB GPU (A100, H100) | ~20 GB in bf16, more while loading |
+
+Python 3.12 or 3.13 and [uv](https://docs.astral.sh/uv/). On CUDA, the Qwen3.5 backbones need `flash-linear-attention` and `triton>=3.7.1` for fast kernels. On Apple Silicon, `uv sync --extra serve` installs `mlx-lm`, and the server uses it automatically.
+
+## Run
+
+```bash
+git clone https://github.com/jaredpalmer/kev.git && cd kev
+uv sync --extra serve
+KEV_API_KEY=$(openssl rand -hex 24) \
+  uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
+```
+
+`--run` takes a Hugging Face id (`jaredpalmer/kev-9b`, `you/kev-4b-support@v2`) or a local run directory from [fine-tuning](/docs/guides/fine-tuning). Weights download on first start and are cached.
+
+The server listens on `127.0.0.1` only. To reach it from other machines, put a reverse proxy (Caddy, nginx, your load balancer) in front of it on the same host and terminate TLS there.
+
+## Settings
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `KEV_API_KEY` | none (open) | Require `Authorization: Bearer <key>`. |
+| `KEV_DTYPE` | `bf16` on GPU | `fp32` gives the exact path used for published benchmarks. bf16 is 2–4.5× faster on an L4 with the same answers in practice. |
+| `KEV_BACKEND` | `auto` | On Apple Silicon, `auto` uses MLX for Qwen3.5 checkpoints. `torch` opts out. |
+| `KEV_PREFIX_CACHE` | `4` | How many recent states to keep cached. Asking new questions about a cached state skips re-reading it. `0` disables. |
+| `KEV_TEMPERATURE` | from checkpoint | Override the built-in calibration. `1.0` returns uncalibrated probabilities; mostly for research. |
+| `KEV_DATE_FACTS` | `0` | `1` adds computed day counts to states that mention dates. Opt-in. |
+
+## Speed
+
+For a short state, a warm Kev-4B answers in about 80–150 ms on an L4. On an Apple M5, five questions on a ~270-token state take 721 ms for a new state and 136 ms when the state is cached.
+
+The cache matters when you ask follow-up questions about the same data: send the same `state` again and only the new questions are computed.
+
+## Try it without installing anything
+
+The [Hugging Face Space](https://huggingface.co/spaces/jaredpalmer/kev) runs Kev in the browser on shared GPUs. It's for trying questions, not for production traffic.

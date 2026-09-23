@@ -1,0 +1,63 @@
+---
+title: What the metrics mean
+description: Accuracy, Brier score, calibration error, confident errors and coverage, in plain language.
+icon: Ruler
+---
+
+Each metric answers a different question about a model. None of them is enough on its own.
+
+## Accuracy
+
+**How often is the most likely answer the right one?** If Kev's top choice matches the label on 82 of 100 questions, accuracy is 0.82.
+
+For Score questions, "right" means the most likely level matches the label exactly. For Noul, "yes" means probability above 0.5.
+
+Accuracy ignores the probabilities. A model that says 0.51 and a model that says 0.99 get the same credit for the same answer.
+
+## Brier score
+
+**How far off are the probabilities?** For each question, compare the predicted probabilities with the truth (1 for the right option, 0 for the others), square the differences and add them up. Average over questions. Lower is better; 0 is perfect.
+
+Example with two options where the right answer is A:
+
+| Prediction | Brier |
+| --- | --- |
+| A: 0.9, B: 0.1 | (1 − 0.9)² + (0 − 0.1)² = 0.02 |
+| A: 0.6, B: 0.4 | 0.32 |
+| A: 0.2, B: 0.8 (wrong and confident) | 1.28 |
+
+Brier rewards being right and being confident only when you should be. It's the single best summary of probability quality, but it mixes accuracy and calibration together.
+
+## Calibration
+
+A model is **calibrated** when its probabilities match reality: of all the answers it gives probability 0.8, about 80% are right.
+
+### Expected calibration error (ECE)
+
+Group answers by probability (0.0–0.1, 0.1–0.2, …). In each group, compare the average probability with the actual accuracy. ECE is the average gap, weighted by how many answers fall in each group. 0.04 means that, on average, stated probabilities are about 4 points off observed accuracy.
+
+### Confident errors
+
+The share of questions where the model gave the wrong answer probability 0.9 or more. These are the mistakes that slip past a threshold, so they're the ones that hurt in production.
+
+### How Kev is calibrated
+
+Neural networks trained like Kev tend to be overconfident. Each Kev checkpoint stores one number, a **temperature** (2.14 for Kev-4B, 2.30 for Kev-9B, 2.41 for Kev-0.8B), fitted on its trained-source development data. The server divides the model's raw scores by it before turning them into probabilities, which pulls extreme probabilities toward the middle.
+
+This never changes which answer is picked, so accuracy is identical with and without it. On Kev-9B's new-source data it lowers ECE from 0.106 to 0.042 and confident errors from 8.7% to 4.0%.
+
+A single temperature fitted on one kind of data doesn't fix every workload. On the WANLI suite, Kev-9B's ECE is 0.131 as shipped; a temperature fitted on WANLI's own labeled rows brings it to 0.037. If calibration matters for your use case, [measure it on your data](/docs/benchmarks/run-your-own).
+
+## Coverage at an error budget
+
+**If I only automate answers above a threshold, how much can I automate?** Pick the error rate you can live with, say 5%. Sort answers by the probability of the top answer and find the lowest threshold where the accepted answers are at most 5% wrong. Coverage is the share of answers above that threshold. The threshold is chosen on the same rows it's scored on, so this is a best case for that data, not a guarantee for a threshold you deploy.
+
+This is the metric closest to the [confidence routing](/docs/guides/confidence-routing) pattern. At a 5% budget on new-source data, Kev-4B covers 0.57, Kev-9B 0.45 and Jev 0.70. Better calibration doesn't necessarily raise coverage: a temperature makes all probabilities less extreme, but doesn't change their order, and coverage depends on the order.
+
+## Option-order flip rate
+
+**Does shuffling the options change the answer?** Kev runs each Choice question with the options in a different order and counts how often the top answer changes. Kev-9B flips 3% of the time and Kev-4B 8%. Jev flips 0%. The playground's "Permute" button, and the `/v1/systemone/permute` endpoint, show this for one question.
+
+## Question isolation
+
+**Does one question affect another's answer?** Kev asks the same questions together and one at a time and checks that the probabilities match. They do, to rounding, by construction. See [Architecture](/docs/architecture/attention-mask).

@@ -1,0 +1,68 @@
+---
+title: TypeSafe JavaScript SDK
+description: Use the official @typesafe-ai/sdk package with Kev from Node, Bun, Deno or edge runtimes.
+icon: FileCode
+---
+
+The official [TypeSafe JavaScript SDK](https://docs.typesafe.ai/sdk/javascript) works with Kev by changing the base URL. Its question helpers infer answer types from your questions, so `answers.department.choice` is typed as `"returns" | "shipping" | "billing"`, not `string`.
+
+## Install
+
+```bash
+npm install @typesafe-ai/sdk
+```
+
+## Example
+
+<include meta='title="typesafe-client.ts"'>../../../examples/typesafe-client.ts</include>
+
+- `baseURL` points at your Kev server. For a [Modal deployment](/docs/deploy/modal), use `https://<workspace>--kev-api.modal.run`.
+- `apiKey` is required by the SDK. Use your `KEV_API_KEY`, or any string for an open local server.
+- `defaultModel: "kev-latest"` is the name Kev serves under. Without it, the SDK asks for `jev-latest`.
+
+## Helpers
+
+| Helper | Kev type | Answer fields |
+| --- | --- | --- |
+| `choice(instructions, { name: description, … })` | `choice` | `choice`, `confidence`, `probabilities` |
+| `noul(instructions, criteria?)` | `noul` | `noul` (probability of yes) |
+| `score(instructions, [lowest, …, highest])` | `score` | `score`, `confidence`, `probabilities`, `legend` |
+
+Descriptions can be `null` when the name is self-explanatory.
+
+## In a Next.js route
+
+The client is safe to create once per server process:
+
+```ts title="app/api/triage/route.ts"
+import { choice, noul, TypeSafeClient } from "@typesafe-ai/sdk";
+
+const kev = new TypeSafeClient({
+  apiKey: process.env.KEV_API_KEY!,
+  baseURL: process.env.KEV_URL!,
+  defaultModel: "kev-latest",
+});
+
+export async function POST(request: Request) {
+  const { message } = await request.json();
+
+  const { answers } = await kev.systemOne({
+    state: { message },
+    questions: {
+      team: choice("Which team should handle this?", {
+        billing: "Charges, refunds, invoices",
+        technical: "Bugs, errors, outages",
+        other: "Anything else",
+      }),
+      urgent: noul("Does this need a reply within the hour?"),
+    },
+  });
+
+  return Response.json({
+    team: answers.team.confidence >= 0.6 ? answers.team.choice : "triage",
+    urgent: answers.urgent.noul > 0.7,
+  });
+}
+```
+
+Keep `KEV_API_KEY` on the server. Never send it to the browser.

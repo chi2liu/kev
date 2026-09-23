@@ -1,0 +1,45 @@
+---
+title: Attention mask
+description: The packed block-causal form used on attention-only backbones, and the isolation property it guarantees.
+---
+
+On attention-only backbones (Qwen2.5, Qwen3; the previous Kev generations), the whole request runs as one sequence with an additive mask.
+
+## The mask
+
+Let $$\mathrm{seg}(t) = 0$$ for state tokens and $$\mathrm{seg}(t) = i$$ for tokens of question $$i$$. Token $$t$$ may attend to token $$u$$ iff
+
+$$
+u \le t \quad\land\quad \big(\mathrm{seg}(u) = 0 \;\lor\; \mathrm{seg}(u) = \mathrm{seg}(t)\big).
+$$
+
+That is: causal, plus the state is visible to everyone, plus each branch sees only itself. Implementation: `branch_mask_batch` in [`kev/model.py`](https://github.com/jaredpalmer/kev/blob/main/kev/model.py), built as an $$L \times L$$ additive mask filled with `finfo(dtype).min` (not $$-\infty$$, so padded rows stay finite under softmax). Padding keys belong to segment $$-1$$ and are masked for every query.
+
+```text
+            state  q1   q2   q3
+state        ◣     ·    ·    ·
+q1           ■     ◣    ·    ·
+q2           ■     ·    ◣    ·
+q3           ■     ·    ·    ◣
+```
+
+Combined with [branch positions that restart after the state](/docs/architecture/input-encoding#positions), each branch's hidden states are exactly what they'd be if that question were asked alone.
+
+## Isolation, verified
+
+Two properties follow and are tested, not assumed:
+
+- **Question isolation.** Asking questions together or one at a time gives the same probabilities. `tests/test_model.py` checks the packed form against the per-question row form to $$10^{-4}$$; the README reports observed differences within $$4 \times 10^{-6}$$ in fp32. `kev.benchmark` reports an isolation statistic on every run, and the server exposes `POST /v1/systemone/separate` for spot checks.
+- **Prefix reuse.** Because the state never attends to branches, its KV cache is independent of the questions. The serving cache crops the KV back to the state after each request and reuses it (see [Serving](/docs/architecture/serving)).
+
+What isolation does **not** give you is option-order invariance. Options within a branch attend causally to earlier options, so reordering them changes the representations. See [option order](/docs/architecture/open-problems#option-order).
+
+## Option isolation (an ablation)
+
+`--option_isolation` goes one step further: each option span becomes its own sub-branch (seeing state, instruction and itself), all spans share position IDs, and `<decide>` sits at a fixed position after the longest span and attends to every span. This makes the readout permutation-invariant by construction.
+
+It cost 5.8 points of accuracy at 4B in the overnight study, so no release uses it. It also needs the packed mask, so it's unavailable on hybrid backbones.
+
+## Cost
+
+One pass processes $$L_s + \sum_i L_i$$ tokens: the state once, each branch once. The mask is $$L \times L$$, so memory grows quadratically in the total packed length. Above 16,384 packed tokens the server switches an attention-only model to the [row form](/docs/architecture/hybrid-backbones), which has the same answers (`test_row_batching_and_packed_fallback_do_not_change_answers`) and bounded memory.

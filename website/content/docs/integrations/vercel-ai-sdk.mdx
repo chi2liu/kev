@@ -1,0 +1,74 @@
+---
+title: Vercel AI SDK
+description: Call Kev with the AI SDK's experimental_evaluate() through a small provider adapter.
+icon: Triangle
+---
+
+The [AI SDK](https://ai-sdk.dev) has an experimental `evaluate()` function for decision models: you pass a state and typed questions, and get back typed answers with probabilities. It's the same idea as Kev's API, with slightly different names.
+
+With the AI SDK, you can reach Jev through Vercel AI Gateway by passing the model string `"typesafe-ai/jev"`. There's no published provider package for Kev, so you add a 100-line adapter to your project that implements the AI SDK's evaluation model interface and calls your Kev endpoint.
+
+<Callout type="warn" title="Experimental API">
+  `experimental_evaluate` and the `EvaluationModelV4` interface are marked experimental in `ai@7` and may change in a minor release. Pin your `ai` and `@ai-sdk/provider` versions. The code on this page is checked against `ai@7.0.105` and `@ai-sdk/provider@4.0.17`.
+</Callout>
+
+## Install
+
+```bash
+npm install ai @ai-sdk/provider
+```
+
+## Use it
+
+<include meta='title="evaluate.ts"'>../../../examples/vercel-evaluate.ts</include>
+
+The answers are typed from your questions, exactly like the TypeSafe SDK.
+
+## Kev types vs AI SDK types
+
+The AI SDK and Kev agree on Choice and Score. They name the yes/no type differently:
+
+| | Kev / TypeSafe API | AI SDK `evaluate()` |
+| --- | --- | --- |
+| Yes/no question type | `"noul"` | `"boolean"` |
+| Yes/no answer | `{ "type": "noul", "noul": 0.93 }` | `{ type: "boolean", probability: 0.93 }` |
+| Choice answer | `choice`, `probabilities`, `confidence` | `choice`, `probabilities` |
+| Score answer | `score`, `probabilities`, `legend`, `confidence` | `score`, `probabilities` |
+
+In both, the yes/no number is the probability that the answer is **true**, not a confidence in whichever answer is more likely. 0.07 means "very likely false".
+
+The adapter converts in both directions: `boolean` questions go to Kev as `noul`, and `noul` answers come back as `boolean`. The AI SDK has no `confidence` field, so the adapter puts Choice and Score confidence in provider metadata:
+
+```ts
+const result = await evaluate({ model, state, questions });
+const confidence = result.providerMetadata?.kev?.confidence as Record<string, number>;
+if (confidence.team < 0.6) sendToTriage();
+```
+
+## The adapter
+
+Copy this file into your project. It's plain `fetch` with no dependencies beyond the types.
+
+<include meta='title="kev-evaluation-model.ts"'>../../../examples/kev-evaluation-model.ts</include>
+
+What it does:
+
+- **`doEvaluate`** sends one `POST /v1/systemone` request per `evaluate()` call, with all questions together.
+- **`supportedQuestionTypes`** tells the AI SDK which question types Kev accepts, so it can reject others before sending.
+- **`rounding`** tells the AI SDK that Kev rounds probabilities and scores to four decimals, so its validation allows for rounding when it checks that probabilities sum to 1.
+- **`response.id`** carries Kev's `x-typesafe-request-id` header, so you can match a result to server logs.
+
+## Retries and timeouts
+
+`evaluate()` retries failed calls twice by default. Set `maxRetries: 0` if you have your own retry logic. For a Modal deployment that scales to zero, give the first call enough time for a cold start (up to a couple of minutes, see [Cold starts](/docs/deploy/modal#cold-starts)) with `abortSignal: AbortSignal.timeout(180_000)`, or keep a container warm.
+
+## Switching between Jev and Kev
+
+```ts
+const model =
+  process.env.DECISION_MODEL === "jev"
+    ? "typesafe-ai/jev" // through Vercel AI Gateway, needs AI_GATEWAY_API_KEY
+    : kev({ baseURL: process.env.KEV_URL!, apiKey: process.env.KEV_API_KEY });
+```
+
+The rest of your code doesn't change. This is also how the Kev repo scores Jev for its [benchmarks](/docs/benchmarks).

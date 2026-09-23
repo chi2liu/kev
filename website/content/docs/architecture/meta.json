@@ -1,0 +1,14 @@
+{
+  "title": "Architecture",
+  "pages": [
+    "index",
+    "input-encoding",
+    "attention-mask",
+    "hybrid-backbones",
+    "pointer-head",
+    "training",
+    "serving",
+    "evaluation-protocol",
+    "open-problems"
+  ]
+}

@@ -1,0 +1,189 @@
+---
+title: Deploy on Modal
+description: Your own private Kev HTTPS endpoint in one command. Scales to zero when idle.
+icon: Cloud
+---
+
+[Modal](https://modal.com) runs code on cloud GPUs and bills by the second. Kev ships a single Python file that turns any Kev checkpoint into a TypeSafe-compatible HTTPS endpoint on Modal. You don't need a GPU, a clone of the Kev repo, a Dockerfile or a Hugging Face account.
+
+When nobody is calling it, the endpoint scales to zero and costs nothing. The trade-off is a cold start on the first request after an idle period.
+
+## Deploy
+
+<Steps>
+<Step>
+
+### Set up Modal
+
+```bash
+pip install modal
+modal setup    # opens a browser to sign in
+```
+
+The free tier is enough for Kev-0.8B and Kev-4B.
+
+</Step>
+<Step>
+
+### Download the app file
+
+```bash
+curl -LO https://raw.githubusercontent.com/jaredpalmer/kev/main/skills/kev-deploy/scripts/kev_serve.py
+```
+
+It's under 80 lines. Read it if you're curious: it builds an image with Kev at a pinned commit, loads the checkpoint on a GPU sized for it, and serves the API.
+
+</Step>
+<Step>
+
+### Create an API key and deploy
+
+```bash
+export KEV_API_KEY=$(openssl rand -hex 24)
+echo $KEV_API_KEY   # save this somewhere safe
+KEV_MODEL=jaredpalmer/kev-4b modal deploy kev_serve.py
+```
+
+Modal prints your URL: `https://<workspace>--kev-api.modal.run`.
+
+<Callout type="warn" title="Always set an API key">
+  Without `KEV_API_KEY`, anyone who finds the URL can use your endpoint and spend your GPU time. The key is stored as a Modal secret and fixed at deploy time.
+</Callout>
+
+</Step>
+<Step>
+
+### Wake it up and check it
+
+The first request after a deploy waits for the model to load. Modal answers a request that waits longer than 150 seconds with a redirect (HTTP 303), so use `curl -L` and a long timeout:
+
+```bash
+export KEV_URL=https://<workspace>--kev-api.modal.run
+curl -sL --max-time 900 $KEV_URL/v1/models -H "authorization: Bearer $KEV_API_KEY"
+```
+
+Then ask a question:
+
+```bash
+curl -s $KEV_URL/v1/systemone -H "authorization: Bearer $KEV_API_KEY" -H 'content-type: application/json' -d '{
+  "state": "Order 4411 arrived late and the box was crushed. Two charges appear on my card.",
+  "questions": {
+    "team": {"type": "choice", "instructions": "Which team should handle this?",
+             "criteria": {"returns": "Exchanges, refunds", "shipping": "Delivery, delays", "billing": "Charges, payments"}},
+    "urgent": {"type": "noul", "instructions": "Does this need urgent human attention?"}
+  }}'
+```
+
+A warm Kev-4B on an L4 answers a short request in about 80–150 ms. A request without the key returns `401`.
+
+</Step>
+<Step>
+
+### Point your code at it
+
+Only the base URL and key change:
+
+<Tabs items={["Python", "TypeScript", "Vercel AI SDK"]}>
+<Tab value="Python">
+
+```python
+# before: TypeSafeClient(api_key=TYPESAFE_API_KEY)
+client = TypeSafeClient(api_key=KEV_API_KEY, base_url=KEV_URL, model="kev-latest")
+```
+
+</Tab>
+<Tab value="TypeScript">
+
+```ts
+// before: new TypeSafeClient({ apiKey: process.env.TYPESAFE_API_KEY })
+const client = new TypeSafeClient({ apiKey: KEV_API_KEY, baseURL: KEV_URL, defaultModel: "kev-latest" });
+```
+
+</Tab>
+<Tab value="Vercel AI SDK">
+
+```ts
+// before: model: "typesafe-ai/jev"
+const model = kev({ baseURL: KEV_URL, apiKey: KEV_API_KEY });
+```
+
+See [Vercel AI SDK](/docs/integrations/vercel-ai-sdk) for the `kev()` adapter.
+
+</Tab>
+</Tabs>
+
+</Step>
+</Steps>
+
+## Choosing a model and GPU
+
+The GPU is picked automatically from the model name. If the first choice isn't available, Modal falls back to the next one.
+
+| `KEV_MODEL` | GPU (fallbacks) | Warm GPU cost | When |
+| --- | --- | --- | --- |
+| `jaredpalmer/kev-0.8b` | L4 (A10G, L40S) | about $0.80/h | Cheapest, prototyping |
+| `jaredpalmer/kev-4b` **(default)** | L4 (A10G, L40S) | about $0.80/h | Best quality per dollar |
+| `jaredpalmer/kev-9b` | A100-80GB (H100) | about $2.50/h | Best accuracy |
+
+You pay the hourly rate only while a container is running. Prices are Modal's list prices at the time of writing; check [modal.com/pricing](https://modal.com/pricing).
+
+Your own fine-tuned checkpoint works too: `KEV_MODEL=you/kev-4b-support`. Names starting with a Kev size (`kev-4b…`) get that size's GPU; anything else gets an H100 unless you set `KEV_GPU`. For a private Hugging Face repo, export `HF_TOKEN` before deploying.
+
+## Cold starts
+
+"Cold start" is the time from the first request to a ready model when no container is running. Measured on 2026-09-23:
+
+| Model | Very first start (downloads weights) | Later starts (weights cached) |
+| --- | --- | --- |
+| Kev-0.8B | 77 s | 33 s |
+| Kev-4B | about 2 min | 52 s |
+| Kev-9B | 128 s | 42 s |
+
+Containers shut down after 5 idle minutes. You have three options:
+
+- **Accept it.** Fine for batch jobs, internal tools and anything that can retry. Use a client timeout of a few minutes and follow redirects.
+- **Keep one warm.** Redeploy with `KEV_MIN_CONTAINERS=1`. No cold starts; you pay the GPU's hourly rate around the clock (about $580/month for an L4).
+- **Warm it ahead of traffic.** Call `/v1/models` from a scheduled job before your busy hours.
+
+## Configuration
+
+All settings are environment variables read at deploy time. Redeploying with different values replaces the model behind the same URL.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `KEV_MODEL` | `jaredpalmer/kev-4b` | Hugging Face checkpoint to serve, optionally `repo@revision`. |
+| `KEV_API_KEY` | none | Bearer token required on every request. Strongly recommended. |
+| `KEV_GPU` | from model name | Override the GPU, e.g. `H100`. |
+| `KEV_MIN_CONTAINERS` | `0` | Containers kept warm. `1` removes cold starts. |
+| `KEV_APP_NAME` | `kev` | Deploy a second, independent endpoint, e.g. `kev-support` → `https://<workspace>--kev-support-api.modal.run`. |
+| `HF_TOKEN` | none | Needed only for private checkpoints. Unset it for public ones. |
+
+## Logs and teardown
+
+```bash
+modal app logs kev                 # load line + every request
+modal app stop kev                 # the URL stops working immediately
+modal volume delete kev-hf-cache   # optional: remove cached weights
+```
+
+## Troubleshooting
+
+<Accordions>
+<Accordion title="The first request hangs or returns 303">
+  The cold start is still running. Follow redirects (`curl -L`), raise your client timeout, or deploy with `KEV_MIN_CONTAINERS=1`. `modal app logs kev` shows "waiting to be scheduled" if Modal is still finding a GPU.
+</Accordion>
+<Accordion title="401 with the right key">
+  The key is fixed at deploy time. Redeploy with the same `KEV_API_KEY` exported.
+</Accordion>
+<Accordion title="CUDA out of memory on start">
+  The GPU is too small for the checkpoint. Use the table above or set `KEV_GPU=H100`.
+</Accordion>
+</Accordions>
+
+## Using a coding agent
+
+The same recipe is packaged as an agent skill. It deploys, verifies, and rewires your existing TypeSafe calls to the new URL:
+
+```bash
+npx skills add jaredpalmer/kev@kev-deploy
+```

@@ -1,0 +1,21 @@
+{
+  "title": "Kev",
+  "pages": [
+    "---Get started---",
+    "index",
+    "quickstart",
+    "choosing-a-model",
+    "---Concepts---",
+    "concepts",
+    "---Build---",
+    "guides",
+    "---Integrations---",
+    "integrations",
+    "---Deploy---",
+    "deploy",
+    "---Benchmarks---",
+    "benchmarks",
+    "---Architecture (for researchers)---",
+    "architecture"
+  ]
+}

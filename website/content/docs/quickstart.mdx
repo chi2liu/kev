@@ -1,0 +1,107 @@
+---
+title: Quickstart
+description: Run Kev on your machine and ask it your first question.
+icon: Rocket
+---
+
+You'll start a Kev server locally, send it a support ticket, and read the answers. No GPU and no AI background needed. If you'd rather not run anything locally, jump to [Deploy on Modal](/docs/deploy/modal) and come back with a URL.
+
+<Steps>
+<Step>
+
+### Install the tools
+
+You need [uv](https://docs.astral.sh/uv/) (a Python package manager) and Git. uv installs the right Python version for you.
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+</Step>
+<Step>
+
+### Start the server
+
+```bash
+git clone https://github.com/jaredpalmer/kev.git && cd kev
+uv sync --extra serve
+uv run --extra serve python -m kev.serve --run jaredpalmer/kev-4b --port 8009
+```
+
+The first run downloads Kev-4B and its Qwen3.5 base model from Hugging Face, which takes a few minutes. Later starts use the cached files. The server listens on `http://127.0.0.1:8009` and is open to your machine only.
+
+<Callout type="info">
+  Kev-4B keeps a 4-billion-parameter model in memory: about 8 GB at 2 bytes per parameter (bf16), twice that in fp32. On a small laptop, use `jaredpalmer/kev-0.8b` instead. It's less accurate but much lighter. See [Choosing a model](/docs/choosing-a-model).
+</Callout>
+
+</Step>
+<Step>
+
+### Ask a question
+
+In a second terminal, send a ticket and three questions about it:
+
+```bash
+curl -s localhost:8009/v1/systemone -H 'content-type: application/json' -d '{
+  "state": "Shoes arrived two weeks late and in the wrong size. Also I see two charges on my card.",
+  "model": "kev-latest",
+  "questions": {
+    "department":  {"type": "choice", "instructions": "Which team should handle this?",
+                    "criteria": {"returns": "Exchanges, refunds, wrong or damaged items",
+                                 "shipping": "Delivery status, delays, lost packages",
+                                 "billing": "Charges, invoices, payment problems"}},
+    "escalate":    {"type": "noul",  "instructions": "Does this need urgent human attention?"},
+    "frustration": {"type": "score", "instructions": "How frustrated is the customer?",
+                    "criteria": ["Calm", "Frustrated", "Very angry"]}
+  }}'
+```
+
+</Step>
+<Step>
+
+### Read the answers
+
+A response from Kev-4B looks like this:
+
+```json
+{
+  "model": "kev-latest",
+  "answers": {
+    "department":  { "type": "choice", "choice": "returns", "confidence": 0.21,
+                     "probabilities": { "returns": 0.47, "shipping": 0.28, "billing": 0.25 } },
+    "escalate":    { "type": "noul", "noul": 0.93 },
+    "frustration": { "type": "score", "score": 1.44, "confidence": 0.78,
+                     "legend": { "0": "Calm", "1": "Frustrated", "2": "Very angry" },
+                     "probabilities": { "0": 0.00, "1": 0.56, "2": 0.44 } }
+  },
+  "usage": { "input_tokens": 101, "output_tokens": 161 },
+  "latency_ms": 495
+}
+```
+
+- **department** picked `returns`, but only with 0.47 probability and low confidence (0.21). That's correct behavior: the ticket really is about returns, shipping _and_ billing. Your app should probably send this to a person or to all three teams.
+- **escalate** is 0.93, so Kev thinks this needs urgent attention.
+- **frustration** is 1.44 on a 0–2 scale: somewhere between "Frustrated" and "Very angry".
+
+</Step>
+</Steps>
+
+Your exact numbers may differ slightly from these, depending on your hardware and precision.
+
+## Try it without code
+
+The repo includes a playground with presets, a question editor and a chess demo where Kev plays using Choice questions. With the server still running:
+
+```bash
+cd playground && npm install && npm run dev -- -p 3001
+```
+
+Open [localhost:3001](http://localhost:3001). There's also a hosted demo on [Hugging Face Spaces](https://huggingface.co/spaces/jaredpalmer/kev).
+
+## Next steps
+
+<Cards>
+  <Card title="State, questions and answers" href="/docs/concepts/state-and-questions" description="The three things every request is made of." />
+  <Card title="Use it from your app" href="/docs/integrations/typesafe-python" description="Python and TypeScript SDKs." />
+  <Card title="Put it on the internet" href="/docs/deploy/modal" description="A private HTTPS endpoint in one command." />
+</Cards>

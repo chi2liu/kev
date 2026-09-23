@@ -1,0 +1,115 @@
+---
+title: TypeSafe Python SDK
+description: Use the official typesafe-sdk package with Kev by changing the base URL.
+icon: FileCode
+---
+
+Kev speaks the same API as TypeSafe's hosted Jev model, so the official [TypeSafe Python SDK](https://docs.typesafe.ai/sdk/python) works with it unchanged. You get typed questions, typed answers, retries and async support without writing any HTTP code.
+
+## Install
+
+```bash
+pip install typesafe-sdk
+```
+
+Kev's own `uv sync --extra serve` installs it too.
+
+## Connect to Kev
+
+Pass your Kev endpoint as `base_url` and `kev-latest` as the model:
+
+<Tabs items={["Local server", "Modal deployment"]}>
+<Tab value="Local server">
+
+```python
+from typesafe_sdk import TypeSafeClient
+
+client = TypeSafeClient(
+    api_key="local",  # any string; a local server is open by default
+    base_url="http://127.0.0.1:8009",
+    model="kev-latest",
+)
+```
+
+</Tab>
+<Tab value="Modal deployment">
+
+```python
+import os
+from typesafe_sdk import TypeSafeClient
+
+client = TypeSafeClient(
+    api_key=os.environ["KEV_API_KEY"],
+    base_url="https://<workspace>--kev-api.modal.run",
+    model="kev-latest",
+    timeout=180,  # the first request after an idle period waits for a cold start
+)
+```
+
+</Tab>
+</Tabs>
+
+Or set it once with environment variables and call `TypeSafeClient()` with no arguments:
+
+```bash
+export TYPESAFE_BASE_URL=https://<workspace>--kev-api.modal.run
+export TYPESAFE_API_KEY=$KEV_API_KEY
+export TYPESAFE_DEFAULT_MODEL=kev-latest
+```
+
+## Ask questions
+
+```python
+from typesafe_sdk import Choice, Noul, Score
+
+response = client.system_one(
+    state="Shoes arrived two weeks late and in the wrong size. Also I see two charges on my card.",
+    questions={
+        "department": Choice(
+            instructions="Which team should handle this?",
+            criteria={
+                "returns": "Exchanges, refunds, wrong or damaged items",
+                "shipping": "Delivery status, delays, lost packages",
+                "billing": "Charges, invoices, payment problems",
+            },
+        ),
+        "escalate": Noul(instructions="Does this need urgent human attention?"),
+        "frustration": Score(
+            instructions="How frustrated is the customer?",
+            criteria=["Calm", "Frustrated", "Very angry"],
+        ),
+    },
+)
+
+department = response.choices["department"]
+print(department.choice, department.confidence, department.probabilities)
+print(response.nouls["escalate"].noul)
+print(response.scores["frustration"].score)
+```
+
+`response.answers` has every answer by ID. `response.choices`, `response.nouls` and `response.scores` are the same answers filtered by type, so your editor knows which fields exist.
+
+## Async
+
+```python
+import asyncio
+from typesafe_sdk import AsyncTypeSafeClient, Noul
+
+async def main():
+    async with AsyncTypeSafeClient(api_key="local", base_url="http://127.0.0.1:8009", model="kev-latest") as client:
+        response = await client.system_one(
+            state="Please cancel my subscription, this is the third time I've asked.",
+            questions={"churn_risk": Noul(instructions="Is the customer about to leave?")},
+        )
+        print(response.nouls["churn_risk"].noul)
+
+asyncio.run(main())
+```
+
+## Switching between Jev and Kev
+
+Because only the client settings differ, you can run both side by side and compare, or use one as a fallback for the other. See [Escalating to a bigger model](/docs/guides/confidence-routing#escalating-to-a-bigger-model) and [Kev vs Jev](/docs/benchmarks/kev-vs-jev).
+
+<Callout title="What's different from Jev">
+  The request and response format is the same. The answers aren't: Kev is a different model and will sometimes disagree with Jev. Kev also doesn't enforce TypeSafe's hosted limits or billing, and it has two extra demo endpoints (`/v1/systemone/permute` and `/v1/systemone/separate`) that the SDK doesn't call.
+</Callout>

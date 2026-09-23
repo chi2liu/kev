@@ -1,0 +1,70 @@
+---
+title: Kev vs Jev
+description: When to use Kev, when to use Jev, and what the comparison can and can't tell you.
+icon: Scale
+---
+
+[Jev](https://docs.typesafe.ai/introduction) is TypeSafe's hosted decision model. Kev is an open-weights model built to answer the same kind of question through the same API. Because the SDKs are shared, you can switch between them by changing a base URL, and many teams will reasonably use both.
+
+## At a glance
+
+| | Kev | Jev |
+| --- | --- | --- |
+| Who runs it | You: laptop, your GPU, or [Modal](/docs/deploy/modal) | TypeSafe |
+| Weights | Open (Apache-2.0), on Hugging Face | Closed |
+| API | TypeSafe System One (`/v1/systemone`) | TypeSafe System One |
+| SDKs | Official TypeSafe Python and JavaScript SDKs, Vercel AI SDK via [an adapter](/docs/integrations/vercel-ai-sdk) | Official TypeSafe SDKs, Vercel AI SDK via AI Gateway |
+| Question types | Choice, Noul, Score | Choice, Noul, Score |
+| Fine-tuning on your data | Yes, [a few hundred examples](/docs/guides/fine-tuning) | Not in TypeSafe's public docs |
+| Data leaves your network | Only if you choose to host it elsewhere | Yes |
+| Accuracy on new kinds of data | 0.822 (Kev-9B), 0.797 (Kev-4B) | **0.857** |
+| General-knowledge questions | Weak (MMLU 0.74) | **Strong (MMLU 0.90)** |
+| Share automatable at ≤ 5% error | 0.45–0.57 | **0.70** |
+| Option-order flips | 3–8% | **0%** |
+| Long documents | Trained up to 384 tokens, accepts 8,192 | Handles TypeSafe's long public eval documents |
+| Cost model | GPU time (about $0.80/h for an L4, $0 idle on Modal) | Per request, from TypeSafe |
+
+Accuracy, coverage and flip numbers are on Kev's frozen new-source development data (`transfer-v4`); see [Results](/docs/benchmarks).
+
+## Choose Kev when
+
+- **Your data can't leave your infrastructure.** Kev runs entirely on your hardware.
+- **You have labeled examples from your domain.** A fine-tuned Kev can beat a general model on a narrow task. Measure it.
+- **Your volume is high and steady.** A warm GPU has a fixed hourly cost regardless of request count.
+- **You want to inspect or change the model.** Weights, training code, data recipes and evaluation suites are all public.
+- **The answer is in the text.** Routing, policy checks, triage and extraction-style questions are where Kev is closest to Jev.
+
+## Choose Jev when
+
+- **You want the most accurate answer today** and don't want to run anything.
+- **Questions need world knowledge**, like "is this drug a controlled substance?" or exam-style questions. Kev is far behind here, and the gap comes from its base model, not its training.
+- **You automate aggressively on thresholds.** Jev's probabilities let it automate more decisions at the same error budget.
+- **Your inputs are long documents.** Kev accuracy drops past a few hundred tokens.
+- **Option order must not matter.** Jev's answers don't change when options are reordered.
+
+## Use both
+
+Because the API is the same, a common setup is Kev first and Jev as the escalation path:
+
+```python
+kev = TypeSafeClient(api_key=KEV_API_KEY, base_url=KEV_URL, model="kev-latest")
+jev = TypeSafeClient(api_key=TYPESAFE_API_KEY)
+
+response = kev.system_one(state=state, questions=questions)
+if response.choices["team"].confidence < 0.6:
+    response = jev.system_one(state=state, questions=questions)
+```
+
+See [Confidence routing](/docs/guides/confidence-routing) for how to pick the threshold.
+
+## How fair is this comparison?
+
+Not perfectly. Things to keep in mind:
+
+- **We don't know what Jev was trained on.** If Jev saw some of these public datasets during training, its scores are inflated. If Kev's training data is closer to these benchmarks than Jev's, Kev's are. "Trained sources" are by definition Kev's training datasets, which is why Kev leads Jev there (0.872 vs 0.845); that number says little about Jev.
+- **Jev was scored on development data only.** Kev's locked test numbers have no Jev counterpart.
+- **The benchmark was built by the Kev project.** External suites built by other people to test Jev ([Results](/docs/benchmarks#other-peoples-benchmarks)) show Kev further behind on some tasks and ahead on one (support-ticket routing).
+- **Jev is a moving target.** Jev numbers are from calls made in September 2026. TypeSafe can update Jev at any time.
+- **Different models, different runtimes.** Kev numbers use fp32 evaluation; Jev is whatever TypeSafe serves.
+
+The honest summary: on these benchmarks, Kev-9B is within a few points of Jev on questions answered by the text, clearly behind on knowledge, and less good at knowing when it's sure. Measure both [on your own data](/docs/benchmarks/run-your-own) before deciding.

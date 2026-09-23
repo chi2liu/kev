@@ -1,0 +1,56 @@
+---
+title: Input encoding
+description: How a System One request becomes a token sequence, and which parts of it the model never sees.
+---
+
+## From request to record
+
+The API layer ([`kev/api.py`](https://github.com/jaredpalmer/kev/blob/main/kev/api.py)) turns a request into an internal record `{state, questions: [{instr, options}]}`:
+
+- **State and instructions** are flattened by `render`: strings pass through, objects become `key: value` lines (nested values indented two spaces under `key:`), arrays become `- item` lines. Field names are the only schema signal the model gets, so descriptive keys matter.
+- **Choice options** render as `name: description`, or just `name` when the description is empty. The option key is part of the text the model reads.
+- **Noul** becomes a two-option question: `no[: criteria.false]`, `yes[: criteria.true]`. The returned `noul` is $$p(\texttt{yes})$$.
+- **Score** levels render as their descriptions, in order. The returned `score` is the expectation $$\sum_i i\,p_i$$.
+- **Question IDs are never rendered.** They exist only to map probabilities back to the response.
+
+## Serialization
+
+Kev reuses five rarely used Qwen special tokens as delimiters, so no embedding rows are added:
+
+| Role | Token |
+| --- | --- |
+| `<state>` | `<\|fim_prefix\|>` |
+| `<q>` | `<\|fim_middle\|>` |
+| `<opt>` | `<\|box_start\|>` |
+| `</opt>` | `<\|box_end\|>` |
+| `<decide>` | `<\|fim_suffix\|>` |
+
+Their embeddings stay frozen by default (`--special_embeddings` makes them trainable; no release uses it). The LoRA adapter learns what they mean in context.
+
+A record with two questions packs as:
+
+```text
+<state> …state…
+<q> instr₁ <opt> o₁₁ </opt> <opt> o₁₂ </opt> … <decide>
+<q> instr₂ <opt> o₂₁ </opt> <opt> o₂₂ </opt> … <decide>
+```
+
+Each question's tokens form a **branch**. The readout positions are the `</opt>` token of every option and the branch's final `<decide>`.
+
+## Delimiters are unforgeable
+
+Caller text is tokenized by `user_tokens`, which rewrites any `<|name|>` sequence to `<¦name¦>` before tokenizing. A state or option can't contain a real delimiter, so a malicious document can't close an option early or inject a fake `<decide>`.
+
+## Positions
+
+Position IDs for the state are $$0 \dots L_s - 1$$. **Every branch restarts at $$L_s$$**: branch $$i$$'s tokens get positions $$L_s, L_s + 1, \dots$$ regardless of how many branches precede it in the packed sequence. So every question sees the same RoPE geometry it would see if asked alone, and the packed and per-question forms are the same computation.
+
+## Context limits
+
+| | Training | Serving |
+| --- | --- | --- |
+| State | 384 tokens | 8,192 tokens |
+| State + one branch (a row) | 1,024 | 8,192 |
+| Packed record | 2,048 | row-form fallback above 16,384 |
+
+Frozen suites admit only records that encode without truncation under every pinned tokenizer (`model.fits`), so training and evaluation see the same population. Serving accepts much longer states than training ever covered; the cost of that shows up in the [long-state results](/docs/architecture/open-problems#long-states). `kev.train --max_state` (up to 7,552) lifts the training limit while preserving each branch's token budget.

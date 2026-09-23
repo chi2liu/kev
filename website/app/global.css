@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+:root {
+  --color-fd-primary: hsl(221, 100%, 50%);
+  --color-kev-jev: hsl(40, 100%, 50%);
+  --color-kev-9b: hsl(218, 100%, 18%);
+  --color-kev-4b: hsl(221, 100%, 50%);
+  --color-kev-08b: hsl(216, 90%, 70%);
+  --color-kev-baseline: hsl(0, 0%, 78%);
+}
+
+.dark {
+  --color-fd-primary: hsl(213, 100%, 66%);
+  --color-kev-9b: hsl(213, 100%, 80%);
+  --color-kev-4b: hsl(213, 100%, 62%);
+  --color-kev-08b: hsl(216, 60%, 42%);
+  --color-kev-baseline: hsl(0, 0%, 36%);
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
