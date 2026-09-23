@@ -4,7 +4,7 @@ import pathlib
 import random
 from collections import Counter
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 import torch
@@ -426,32 +426,33 @@ def test_training_losses_match_definitions(options):
     assert torch.isfinite(z.grad).all()
 
 
-def test_batch_loss_defers_logging_without_retaining_gradients():
+@pytest.mark.parametrize("bad", [False, True])
+def test_batch_loss_logs_detached_sums_and_nonfinite_steps_abort(bad):
+    """batch_loss returns the logged [ce, anchor, kl] sums detached (the loss is their weighted sum) and no longer checks
+    finiteness itself: a NaN logit reaches the gradients, where the optimizer step's clip_grad_norm_ refuses it."""
     from kev.train import Variant, batch_loss
 
     q = {"qid": "q", "qtype": "choice", "label": 1, "keys": ["a", "b", "c"]}
     first = Variant({"questions": [q]}, {"ids": [1]}, "first", "source", ({"ids": [2]}, [[1, 2, 0]]))
     second = Variant({"questions": [q]}, {"ids": [3]}, "second", "source")
-    z1 = torch.tensor([0.2, 0.8, -0.1], requires_grad=True)
+    z1 = torch.tensor([0.2, float("nan") if bad else 0.8, -0.1], requires_grad=True)
     z2 = torch.tensor([0.3, -0.4, 0.5], requires_grad=True)
     zp = torch.tensor([-0.2, 0.6, 0.3], requires_grad=True)
     model = SimpleNamespace(forward_batch=Mock(side_effect=[[[z1], [z2]], [[zp]]]))
     args = SimpleNamespace(ord_w=0.0, label_smoothing=0.0, brier_w=0.0, focal_gamma=0.0, anchor_w=0.4, perm_kl=0.2)
     anchors = {"first": {"q": {"a": 0.2, "b": 0.7, "c": 0.1}}}
 
-    with patch.object(torch.Tensor, "item", side_effect=AssertionError("logging must not sync per variant")):
-        loss, terms = batch_loss(model, args, [first, second], "cpu", anchors, None, contextlib.nullcontext())
-
-    assert all(not terms[k].requires_grad and terms[k].dtype == torch.float32 for k in ("ce", "kl", "anchor"))
-    assert (terms["anchor_n"], terms["kl_n"]) == (1, 1)
-    run = Counter()
-    run.update(terms)
-    run.update(terms)
-    ce, kl, anchor = torch.stack([torch.as_tensor(run[k], device="cpu") for k in ("ce", "kl", "anchor")]).tolist()
-    assert ce == pytest.approx(2 * (question_loss(z1, q, "cpu", 0).item() + question_loss(z2, q, "cpu", 0).item()))
-    assert kl == pytest.approx(2 * terms["kl"].item()) and anchor == pytest.approx(2 * terms["anchor"].item())
+    loss, logged, counts = batch_loss(model, args, [first, second], "cpu", anchors, None, contextlib.nullcontext())
     loss.backward()
-    assert all(z.grad is not None and torch.isfinite(z.grad).all() for z in (z1, z2, zp))
+    if bad:
+        with pytest.raises(RuntimeError, match="non-finite"):
+            torch.nn.utils.clip_grad_norm_([z1, z2, zp], 1.0, error_if_nonfinite=True)
+        return
+    assert not logged.requires_grad and counts == Counter(anchor_n=1, kl_n=1)
+    ce, anchor, kl = logged.tolist()
+    assert ce == pytest.approx(question_loss(z1, q, "cpu", 0).item() + question_loss(z2, q, "cpu", 0).item())
+    assert loss.item() == pytest.approx(ce + 0.4 * anchor + 0.2 * kl) and anchor > 0 and kl > 0
+    assert all(torch.isfinite(z.grad).all() for z in (z1, z2, zp))
 
 
 def test_brier_mixture_is_proper_and_soft_targets_unchanged():
