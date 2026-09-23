@@ -98,6 +98,19 @@ Reported, never gating:
 
 **Next (to be registered, not read):** the 9B recipe minus the MNLI soft targets (keep them hard) isolates the WANLI question. It needs fresh panels (both round-5 panels have now been read by these candidates) and a WANLI panel disjoint from the 256 items, large enough that a 1 pp point threshold is not three questions. The external gates in this round were point estimates on 89–256 questions; the next registration should use paired intervals with a margin sized to the suite.
 
+## Round 7 - documents delta (registered 2026-09-23T22:15Z, before any training or read)
+
+**Why.** On `evals/documents-v1` development (920 real CFPB-complaint questions; PLAN_27b "documents-v1 result"), Jev leads the released Kev-9B by 3.6 pp [1.2, 6.0] and 0.079 Brier, concentrated in the issue question (82.1 vs 74.9) and long narratives (88.5 vs 81.3); round 5/6 long-state training moved this suite by −0.4 / −0.8 pp. This round trains on real documents: `documents-v1` train (5,219 records, 7,488 teacher-agreed questions).
+
+**Arms** (study `r7-docs`, `experiments/round7/docs.json`; one epoch; `data evals/documents-v1/train.jsonl`, `replay 2000` from decision-v7 train, `max_state 7552`, `p_none_pair 0.25`, bf16, checkpointing; hard labels only): Kev-9B from `jaredpalmer/kev-9b` at lr 2e-5, seeds 1 and 2 (`batch 2, accum 4`); Kev-4B from `jaredpalmer/kev-4b` at lr 2e-5 (`batch 2, accum 4`); Kev-0.8B from `jaredpalmer/kev-0.8b` at lr 4e-5 (`batch 4, accum 2`); Kev-27B from `/runs/r6-27b/00-trial-0/checkpoint` (round-6 trial A) at lr 2e-5 (`weights_dtype bf16, batch 1, accum 8`). H200; timeouts 12,600 s (9B), 10,800 s (4B), 7,200 s (0.8B), 28,800 s (27B, own study `r7-docs-27b`).
+
+**Rule, per arm against its own parent** (the released checkpoint; trial A for the 27B arm), paired record-clustered bootstraps, 2,000 resamples, seed 0, each arm served at the temperature fitted on its own decision-v7 development rows:
+1. Primary: `documents-v1` development accuracy, paired lower bound > 0.
+2. Short-state guard (`transfer-v4` development, in-trial): accuracy lower bound ≥ −1 pp, Brier upper bound ≤ +0.01, confident-error rate upper bound ≤ +1 pp.
+3. External guards (SemIf-144, scienthoon-900, wanli-v2, TypeSafe-89): per-suite accuracy lower bound ≥ −2 pp (n ≥ 500) or ≥ −3 pp (n < 500); pooled lower bound ≥ −1.5 pp with no point-estimate requirement (round 6 showed the point requirement cannot be met by a model that is merely not worse); `transfer-v9` unknowable share at p ≥ 0.9 ≤ 0.05.
+4. Per size, the passing arm with the largest primary point estimate is the candidate (9B: the two seeds are also reported pooled). Jev is reported on every table, not gated.
+5. Confirmation, read once per candidate with its parent: `documents-v1` test (574 records, 936 questions; locked and never read; public text, so this is a procedural lock) — paired accuracy lower bound > 0. Then one locked `transfer-v4` read (`locked_test --name kev-<size>-r7`): locked accuracy ≥ parent − 1 pp and served Brier ≤ parent + 0.005. A private `documents-v2` held-out set (in `jaredpalmer/kev-private-evals`), when frozen, gets one read of the confirmed candidate as a second, uncontaminated confirmation; it does not gate.
+
 ## Round 6 - overnight autoresearch (registered 2026-09-23T02:12Z, before any training or read)
 
 Unattended session (program: [`docs/prompts/overnight-round6.md`](docs/prompts/overnight-round6.md)); branch `research/overnight-r6`, no publishing, no Hub changes, nothing to `main`. Continues round 5's "Next" paragraph. **Budget baseline:** Modal metered **$543.10** at 2026-09-23T02:03Z; hard stop at $1,000 of tonight's spend counting the admission bounds of everything still running; per-phase caps on admission bounds: Phase 0 $10, Phase 1 (A1) $35, B1 (27B) $250, Phase 2 (deltas + reads) $500, Phase 4 (confirmations + locked) $80, reserve >= $125 never planned into. State file: `runs/r6-state.json`.
