@@ -60,13 +60,13 @@ WARMUP = {"state": "Shoes arrived two weeks late and in the wrong size. Also I s
 
 
 def load_server(run):
-    """kev.serve's Server for `run`, loaded the way kev.serve.main does on CUDA (bf16, KEV_BACKEND from the image)."""
+    """kev.serve's Server for `run`, loaded the way kev.serve.main does on CUDA (bf16, CUDA graphs for torch, KEV_BACKEND from the image)."""
     import torch
     from kev.api import SystemOneRequest
     from kev.checkpoint import Checkpoint, LoadOptions
     from kev.serve import Server
     ck = Checkpoint(run)
-    tok, model = ck.load("cuda", replace(LoadOptions.from_env(), dtype=torch.bfloat16))
+    tok, model = ck.load("cuda", replace(LoadOptions.from_env(), dtype=torch.bfloat16, cuda_graphs=True))
     server = Server(ck, tok, model, "cuda")
     server.answer(SystemOneRequest.model_validate(WARMUP))   # compile kernels / capture graphs before the first real request
     hf_cache.commit()
@@ -126,7 +126,8 @@ def load_test(run, suite, levels, requests):
     def one(rec):
         t = time.perf_counter(); server.probs(rec); return time.perf_counter() - t
 
-    for rec in sample[:8]: one(rec)   # warm every shape bucket we can before timing
+    for rec in sample: one(rec)   # warm every shape before timing: torch captures each new CUDA-graph bucket in the background
+    while server.capture_lock.locked(): time.sleep(0.1)
     report = {"backend": server.model.backend, "gpu": GPU, "run": run, "levels": {}}
     for c in levels:
         with ThreadPoolExecutor(c) as pool:
