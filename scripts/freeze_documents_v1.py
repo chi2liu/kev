@@ -16,7 +16,7 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from kev.suite import write_json, write_jsonl  # noqa: E402
+from kev.suite import SERVING_CONTEXT, read_manifest, write_json, write_jsonl  # noqa: E402
 
 WORK = Path("runs/documents-v1-work")
 TEACHERS = ("deepseek/deepseek-v3.2", "alibaba/qwen3-235b-a22b-thinking")
@@ -162,7 +162,8 @@ def main():
                                        "label_protocol": "PLAN_27b B2 revised: train = native label kept where both open-weight teachers agree; development/test = native label verified by a unanimous three-judge panel or adjudicated",
                                        "teachers": TEACHERS, "judges": JUDGES, "adjudicators": "two independent Devin subagents per item (Claude family); decided only on agreement", "label_report": report, "spot_check": human,
                                        "description": f"AI-adjudicated, human spot-checked ({human['agreement']} agreement)",
-                                       "trainable_sources": ["cfpb"], "candidates_build": build})
+                                       "trainable_sources": ["cfpb"], "holdout_sources": [], "context": SERVING_CONTEXT,
+                                       "base_revisions": read_manifest("evals/v7/decision-v7")["base_revisions"], "candidates_build": build})
     print(f"frozen {out}; spot-check sample -> {WORK / 'spot_check.jsonl'}")
 
 

@@ -107,6 +107,17 @@
   "trainable_sources": [
     "cfpb"
   ],
+  "holdout_sources": [],
+  "context": {
+    "max_state": 8192,
+    "max_branch": 8192,
+    "max_packed": 16384,
+    "truncate": false
+  },
+  "base_revisions": {
+    "Qwen/Qwen3-0.6B-Base": "da87bfb608c14b7cf20ba1ce41287e8de496c0cd",
+    "Qwen/Qwen3-4B-Base": "906bfd4b4dc7f14ee4320094d8b41684abff8539"
+  },
   "candidates_build": {
     "repo": "davidheineman/consumer-finance-complaints-large",
     "revision": "44cfa170a402e254407470275ce05d7dcaccde30",
