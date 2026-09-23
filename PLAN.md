@@ -225,6 +225,16 @@ Trial A above missed the registered 27B rule by 0.15 pp on the paired lower boun
 
 **Rule, unchanged from the round-6 27B rule:** a trial is a candidate if `transfer-v4` development accuracy ≥ 0.842 with a paired lower bound > 0 against `runs/night2-9b-du/00-trial-0`, MMLU-Pro on `transfer-v9` development ≥ 0.65, no `transfer-v4` task more than 3 pp below Kev-9B's, held-out pairs ≥ 0.75, unknowable share at p ≥ 0.9 ≤ 0.05. If both seeds qualify, the one with the higher `transfer-v4` accuracy is the candidate (the other is reported). The candidate is then read once on `transfer-r6` test against Kev-9B (accuracy lower bound > 0), and if that holds, once on the locked tests as `kev-27b-r6`: pass if locked `transfer-v4` ≥ 0.862 and served Brier ≤ 0.237. Externals (SemIf, scienthoon, wanli-v2, TypeSafe) are read for the candidate and reported. Nothing is re-read; a failing trial is written up as such. The base is post-trained and any card must say so; the A2 MMLU-Pro override stands.
 
+**Result (2026-09-23):** neither two-epoch seed is a candidate; two epochs bought nothing over one.
+
+| `r6-27b-2ep` | transfer-v4 dev | vs Kev-9B (paired) | MMLU-Pro | `deadline` | MMLU | pairs | cov ≤ 5 % / Brier | task > 3 pp below 9B | SemIf / scienthoon / WANLI-v2 / TypeSafe | wall |
+|---|---|---|---|---|---|---|---|---|---|---|
+| seed 1 | 0.846 | +2.4 pp [−0.3, +5.3] | 0.650 | 0.950 | 0.838 | 0.94 | 0.648 / 0.226 | emotion −5.0 | 0.931 / 0.772 / 0.752 / 0.843 | 220 min |
+| seed 2 | 0.846 | +2.4 pp [−0.3, +5.3] | 0.625 | 0.975 | 0.825 | 0.94 | 0.657 / 0.226 | conditional −3.1 | 0.951 / 0.740 / 0.742 / 0.854 | 192 min |
+| (seed 0, 1 epoch) | 0.849 | +2.7 pp [−0.15, +5.6] | 0.655 | 0.975 | 0.863 | 0.92 | 0.720 / 0.215 | conditional −6.2 | 0.951 / 0.773 / 0.751 / 0.843 | 110 min |
+
+Three seeds agree on about +2.5 pp over Kev-9B on `transfer-v4` development, with the base's date arithmetic kept and MMLU +9-13 pp; the registered rule's paired lower bound (> 0 on 656 questions needs a true gain above ~2.8 pp) and its per-task floor (tasks of 32-40 questions) cannot resolve a gain of this size. No `transfer-r6` or locked read. Reads: `runs/r6-27b2ep-s{1,2}-{v9,semif,scienthoon,wanli2,typesafe}`.
+
 ### Release confirmation: soft-target Kev-9B (registered 2026-09-22, before any read below)
 
 4.9 missed its registered coverage gate, but at 9B it improved Brier and halved confident errors with intervals that exclude zero, on the same development items used to select it. This registers one confirmatory read on data never scored by any Kev model, and the rule that decides a release, written before the numbers exist.
