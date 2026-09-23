@@ -184,3 +184,6 @@ evals/documents-v1/train.jsonl
 !runs/documents-v1-work/labels/spend.json
 !runs/documents-v1-work/candidates/
 !runs/documents-v1-work/candidates/build.json
+# documents-v2: private held-out suite; partitions live only in jaredpalmer/kev-private-evals (kev.suite mirror)
+evals/documents-v2/*.jsonl
+runs/documents-v2-work/

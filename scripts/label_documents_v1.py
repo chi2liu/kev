@@ -69,15 +69,17 @@ def main():
     ap.add_argument("--cap", type=float, default=80.0, help="hard cap in dollars across every run (the ledger at runs/documents-v1-work/labels/spend.json)")
     ap.add_argument("--limit", type=int, default=0, help="label only the first N documents (a smoke run)")
     ap.add_argument("--workers", type=int, default=16)
+    ap.add_argument("--work", default=str(WORK), help="work directory (runs/documents-v2-work for the held-out set)")
     a = ap.parse_args()
+    work = Path(a.work)
     key = os.environ["AI_GATEWAY_API_KEY"]
     if "jev" in a.models.lower(): raise SystemExit("no Jev in any role")
-    recs = [json.loads(l) for l in open(WORK / "candidates" / f"{a.split}.jsonl")]
+    recs = [json.loads(l) for l in open(work / "candidates" / f"{a.split}.jsonl")]
     if a.limit: recs = recs[:a.limit]
-    ledger_path = WORK / "labels" / "spend.json"; ledger_path.parent.mkdir(parents=True, exist_ok=True)
+    ledger_path = work / "labels" / "spend.json"; ledger_path.parent.mkdir(parents=True, exist_ok=True)
     ledger = json.load(open(ledger_path)) if ledger_path.exists() else {"total": 0.0, "by_model": {}}
     for model in a.models.split(","):
-        out = WORK / "labels" / a.split / (model.replace("/", "__") + ".jsonl"); out.parent.mkdir(parents=True, exist_ok=True)
+        out = work / "labels" / a.split / (model.replace("/", "__") + ".jsonl"); out.parent.mkdir(parents=True, exist_ok=True)
         done = {json.loads(l)["id"] for l in open(out)} if out.exists() else set()
         todo = [r for r in recs if r["_meta"]["id"] not in done]
         print(f"{model} on {a.split}: {len(done)} cached, {len(todo)} to label; spend so far ${ledger['total']:.2f} of ${a.cap:.2f}", flush=True)

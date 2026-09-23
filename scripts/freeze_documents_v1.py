@@ -16,7 +16,7 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from kev.suite import SERVING_CONTEXT, read_manifest, write_json, write_jsonl  # noqa: E402
+from kev.suite import PRIVATE_DATASET, SERVING_CONTEXT, read_manifest, write_json, write_jsonl  # noqa: E402
 
 WORK = Path("runs/documents-v1-work")
 TEACHERS = ("deepseek/deepseek-v3.2", "alibaba/qwen3-235b-a22b-thinking")
@@ -46,6 +46,7 @@ def strip(q):
 
 
 def train_split():
+    if not (WORK / "candidates" / "train.jsonl").exists(): return None, {}   # a held-out-only suite (documents-v2)
     recs, ans, kept, c = load("train"), answers("train", TEACHERS), [], Counter()
     for r in recs:
         qs = {}
@@ -58,6 +59,7 @@ def train_split():
 
 
 def eval_split(split, adjudications):
+    if not (WORK / "candidates" / f"{split}.jsonl").exists(): return None, [], {}
     recs, ans, kept, queue, c = load(split), answers(split, JUDGES), [], [], Counter()
     for r in recs:
         qs, rid = {}, r["_meta"]["id"]
@@ -120,10 +122,23 @@ def spot_check(test):
     print(f"spot-check sample: 50 of {len(items)} test questions -> {WORK / 'spot_check.jsonl'}")
 
 
+def upload_private(out, names):
+    """Push the frozen partitions to the private mirror at the suite's path under evals/; returns the commit to pin."""
+    from huggingface_hub import CommitOperationAdd, HfApi
+    rel = out.resolve().relative_to(next(p for p in out.resolve().parents if p.name == "evals"))
+    info = HfApi().create_commit(PRIVATE_DATASET, repo_type="dataset", commit_message=f"{rel}: frozen partitions",
+                                 operations=[CommitOperationAdd(f"{rel}/{n}", str(out / n)) for n in names])
+    return info.oid
+
+
 def main():
+    global WORK
     ap = argparse.ArgumentParser(); ap.add_argument("--report", action="store_true"); ap.add_argument("--freeze", default=""); ap.add_argument("--combine", action="store_true")
     ap.add_argument("--spot-check", action="store_true", help="write the 50-item human sample from the (final) test split")
+    ap.add_argument("--work", default=str(WORK)); ap.add_argument("--version", default="documents-v1")
+    ap.add_argument("--private", action="store_true", help="partitions go only to kev.suite.PRIVATE_DATASET; the manifest pins that commit")
     a = ap.parse_args()
+    WORK = Path(a.work)
     if a.combine: return combine()
     adj_path = WORK / "adjudications.jsonl"
     adjudications = {r["id"]: r for r in map(json.loads, open(adj_path))} if adj_path.exists() else {}
@@ -131,6 +146,7 @@ def main():
     splits, report, queue = {"train": train}, {"train": tc}, []
     for split in ("development", "test"):
         splits[split], q, report[split] = eval_split(split, adjudications); queue += q
+    splits = {k: v for k, v in splits.items() if v is not None}; report = {k: v for k, v in report.items() if k in splits}
     print(json.dumps(report, indent=1))
     if a.spot_check:
         if report["test"].get("awaiting_adjudication"): raise SystemExit("test adjudications missing")
@@ -157,8 +173,9 @@ def main():
              "disagreements": [{"id": r["id"], "frozen": r["proposed_label"], "reviewer": r["label"], "verdict": r["verdict"]} for r in reviews if r["verdict"] != "accept"],
              "reviews_sha256": hashlib.sha256((WORK / "spot_check_reviews.jsonl").read_bytes()).hexdigest()}
     build = json.load(open(WORK / "candidates" / "build.json"))
-    write_json(out / "manifest.json", {"version": "documents-v1", "partitions": ["train", "development", "test"], "locked": ["test"], "files": files,
-                                       "source": build["repo"] + "@" + build["revision"], "rights": "US CFPB consumer complaint database, US government work (public domain)",
+    mirror = {"mirror": {"dataset": PRIVATE_DATASET, "revision": upload_private(out, list(files))}} if a.private else {}
+    write_json(out / "manifest.json", {"version": a.version, "partitions": list(splits), "locked": ["test"], "files": files, **mirror,
+                                       "source": build["repo"] + "@" + build["revision"], "rights": "consumer narratives published by the US CFPB with consent; the CFPB considers them public domain for FOIA purposes" if a.private else "US CFPB consumer complaint database, US government work (public domain)",
                                        "label_protocol": "PLAN_27b B2 revised: train = native label kept where both open-weight teachers agree; development/test = native label verified by a unanimous three-judge panel or adjudicated",
                                        "teachers": TEACHERS, "judges": JUDGES, "adjudicators": "two independent Devin subagents per item (Claude family); decided only on agreement", "label_report": report, "spot_check": human,
                                        "description": f"AI-adjudicated, human spot-checked ({human['agreement']} agreement)",
