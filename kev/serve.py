@@ -53,7 +53,16 @@ class Server:
         state only pays for its question branches. Exact: the state's activations do not depend on the branches."""
         try: enc = self.model.encode(self.tok, rec, max_state=SERVE_MAX_STATE, max_branch=SERVE_MAX_BRANCH)
         except ValueError as e: raise HTTPException(422, str(e))
-        Ls = enc["seg"].count(0); key = (tuple(enc["ids"][:Ls]), bool(enc.get("option_isolation")))
+        Ls = enc["seg"].count(0)
+        if self.model.concurrent:   # the vLLM engine batches concurrent callers itself: no lock, no prefix cache here
+            t = time.time(); ps = self.model.probs(enc); dt = time.time() - t; hit = False
+        else:
+            ps, hit, dt = self._probs_locked(enc, Ls)
+        return [p.tolist() for p in ps], {"tokens": len(enc["ids"]), "state_tokens": Ls, "latency_ms": round(dt * 1000, 1), "prefix_cache_hit": hit}
+
+    def _probs_locked(self, enc, Ls):
+        """One model call at a time, through the state-prefix cache. -> (probs, cache hit, seconds)."""
+        key = (tuple(enc["ids"][:Ls]), bool(enc.get("option_isolation")))
         cache, hit = self.prefix_cache, False
         with self.lock:
             sync(self.device); t = time.time()
@@ -70,7 +79,7 @@ class Server:
             else:
                 ps = self.model.probs(enc)
             sync(self.device); dt = time.time() - t
-        return [p.tolist() for p in ps], {"tokens": len(enc["ids"]), "state_tokens": Ls, "latency_ms": round(dt * 1000, 1), "prefix_cache_hit": hit}
+        return ps, hit, dt
 
     def answer(self, req):
         """The /v1/systemone response body for one request."""

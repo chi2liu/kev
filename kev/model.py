@@ -186,10 +186,11 @@ class PointerHead(nn.Module):
         return z if self.training or self.temperature == 1.0 else z / self.temperature
 
 
-# What a loaded model exposes to kev.serve, kev.predictors and the Space: the scoring interface both DecisionModel (torch)
-# and kev.mlx_model.MLXDecisionModel implement. tests/test_mlx.py checks the MLX class against this list.
+# What a loaded model exposes to kev.serve, kev.predictors and the Space: the scoring interface DecisionModel (torch),
+# kev.mlx_model.MLXDecisionModel and kev.vllm_model.VLLMDecisionModel implement. tests/test_mlx.py checks the MLX class
+# against this list, tests/test_unit.py the vLLM one.
 SCORING_INTERFACE = ("encode", "forward", "probs", "probs_and_prefix", "probs_with_prefix", "eval",
-                     "head", "backend", "dtype", "device", "hybrid", "option_isolation", "prefix_min_tokens")
+                     "head", "backend", "dtype", "device", "hybrid", "option_isolation", "prefix_min_tokens", "concurrent")
 
 
 class DecisionModel(nn.Module):
@@ -222,7 +223,8 @@ class DecisionModel(nn.Module):
         self.device = device
         self.to(device)
 
-    backend = "torch"           # kev.mlx_model.MLXDecisionModel is the other implementation of this scoring interface
+    backend = "torch"           # kev.mlx_model.MLXDecisionModel and kev.vllm_model.VLLMDecisionModel are the other implementations of this scoring interface
+    concurrent = False          # one forward at a time: kev.serve holds its lock around every call
 
     @property
     def prefix_min_tokens(self):

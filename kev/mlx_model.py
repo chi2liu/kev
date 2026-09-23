@@ -56,7 +56,7 @@ def merge_lora(lm, adapter_dir, scale=1.0):
 
 class MLXDecisionModel:
     """Prefill-only scorer: hidden states from mlx-lm, logits from the shared torch PointerHead."""
-    backend, device, hybrid, option_isolation = "mlx", "mlx", True, False
+    backend, device, hybrid, option_isolation, concurrent = "mlx", "mlx", True, False, False
     prefix_min_tokens = 0   # kev.serve caches the state prefix for every request: on Metal the branch-only pass is always the cheaper one
 
     def __init__(self, base_dir, pad_id, head_dim=256):

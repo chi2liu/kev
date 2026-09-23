@@ -13,7 +13,7 @@ import datetime
 import json
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import torch
@@ -93,7 +93,9 @@ class LoadOptions:
                  bases, which MPS already runs well). "auto" = mlx when the device is mps, the base is hybrid, mlx-lm is
                  installed and fp32 was not asked for (an explicit dtype=float32 means "the exact path"), else torch;
                  kev.serve uses auto. The MLX path always merges the adapter and ignores `attn` and `dtype` (the backbone
-                 runs as stored, bf16).
+                 runs as stored, bf16). "vllm" = kev.vllm_model (CUDA only, never chosen by auto): the adapter merged
+                 in fp32 and exported once, the backbone served by a vLLM engine that batches concurrent requests; needs
+                 vllm installed (the Modal serving image, modal_serve.py).
     """
     dtype: torch.dtype | None = None
     merge: bool = True
@@ -102,16 +104,16 @@ class LoadOptions:
     temperature: float | None = None
     backend: str | None = None
 
-    BACKENDS = (None, "torch", "mlx", "auto")
+    BACKENDS = (None, "torch", "mlx", "vllm", "auto")
 
     @classmethod
     def from_env(cls, env=os.environ):
-        """KEV_DTYPE=bf16|fp16|fp32, KEV_MERGE=0, KEV_ATTN=sdpa|eager, KEV_LORA_SCALE, KEV_TEMPERATURE, KEV_BACKEND=torch|mlx|auto.
+        """KEV_DTYPE=bf16|fp16|fp32, KEV_MERGE=0, KEV_ATTN=sdpa|eager, KEV_LORA_SCALE, KEV_TEMPERATURE, KEV_BACKEND=torch|mlx|vllm|auto.
         For command-line entry points only; library code passes an explicit LoadOptions. Explicit values that equal a
         library default are kept (fp32 as torch.float32, "torch" as a string) so a caller with its own default, like
         kev.serve, can tell "asked for it" from "did not say"."""
         backend = env.get("KEV_BACKEND") or None
-        if backend not in cls.BACKENDS: raise ValueError(f"KEV_BACKEND must be one of torch, mlx, auto; got {backend!r}")
+        if backend not in cls.BACKENDS: raise ValueError(f"KEV_BACKEND must be one of torch, mlx, vllm, auto; got {backend!r}")
         return cls(dtype={"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}.get(env.get("KEV_DTYPE", "")),
                    merge=env.get("KEV_MERGE", "1") != "0", attn=env.get("KEV_ATTN") or None,
                    lora_scale=float(env.get("KEV_LORA_SCALE", "1")),
@@ -164,10 +166,13 @@ class Checkpoint:
 
     def load(self, device, opts=LoadOptions()):
         """-> (tokenizer, model) in eval mode with the LoRA applied and the pointer head loaded. The model is a
-        DecisionModel (torch) or an MLXDecisionModel (backend mlx); both expose the same scoring interface."""
+        DecisionModel (torch), an MLXDecisionModel (backend mlx) or a VLLMDecisionModel (backend vllm); all expose the
+        same scoring interface."""
         meta = self.meta
         tok = load_tokenizer(meta.base, revision=meta.base_revision)
-        m = self._load_mlx(tok, opts) if self.backend(device, opts) == "mlx" else self._load_torch(tok, device, opts)
+        backend = self.backend(device, opts)
+        m = (self._load_mlx(tok, opts) if backend == "mlx" else self._load_vllm(tok, device, opts) if backend == "vllm"
+             else self._load_torch(tok, device, opts))
         m.head.load_state_dict(meta.head); m.eval()
         m.head.temperature = meta.temperature if opts.temperature is None else opts.temperature
         return tok, m
@@ -181,6 +186,21 @@ class Checkpoint:
         m = MLXDecisionModel(base_dir, pad_id(tok), head_dim=self.meta.head_dim)
         merge_lora(m.lm, self.path, opts.lora_scale)
         return m
+
+    def _load_vllm(self, tok, device, opts):
+        from .vllm_model import VLLMDecisionModel, export_dir, export_merged
+        if not str(device).startswith("cuda"): raise ValueError(f"the vLLM backend runs on CUDA; got device {device}")
+        if not opts.merge: raise ValueError("the vLLM backend always merges the adapter (KEV_MERGE=0 needs backend=torch)")
+        if self.meta.option_isolation: raise ValueError("option_isolation needs the packed mask; not available on the vLLM backend")
+        if self.meta.weights_dtype == "bf16" or self.adapter_config().get("trainable_token_indices"):
+            raise ValueError("the vLLM backend serves merged adapters; bf16-backbone and token-trained checkpoints stay unmerged (backend=torch)")
+        dtype = opts.dtype or torch.bfloat16
+        out = export_dir(self, dtype, opts.lora_scale)
+        if not (out / "model.safetensors").exists():
+            merged = self._load_torch(tok, "cpu", replace(opts, dtype=None, backend="torch"))   # fp32 merge on the host: exact, and the GPU stays free for the engine
+            export_merged(merged.lm, tok, out, dtype)
+            del merged
+        return VLLMDecisionModel(out, dtype, head_dim=self.meta.head_dim)
 
     def _load_torch(self, tok, device, opts):
         from peft import PeftModel

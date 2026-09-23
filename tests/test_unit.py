@@ -161,6 +161,7 @@ def test_checkpoint_meta_round_trip_and_defaults(tmp_path):
     assert opts == LoadOptions(dtype=torch.bfloat16, merge=False, attn="sdpa", lora_scale=0.5, temperature=1.0)
     assert LoadOptions.from_env({"KEV_DTYPE": "fp32"}).dtype is torch.float32   # explicit fp32 survives, so kev.serve's bf16 default can be declined
     assert LoadOptions.from_env({}).backend is None and LoadOptions.from_env({"KEV_BACKEND": "mlx"}).backend == "mlx"
+    assert LoadOptions.from_env({"KEV_BACKEND": "vllm"}).backend == "vllm"
     with pytest.raises(ValueError, match="KEV_BACKEND"):
         LoadOptions.from_env({"KEV_BACKEND": "metal"})
 
@@ -189,6 +190,33 @@ def test_permute_bounds_n_perm(n_perm, code, monkeypatch):
         r = client.post("/v1/systemone/permute", json=body)
     assert r.status_code == code
     if code == 200: assert len(r.json()["runs"]) == n_perm and r.json()["argmax_stable"]
+
+
+def test_serve_skips_lock_and_prefix_cache_for_concurrent_backends():
+    """A concurrent backend (vLLM) is called without the server lock and never through the state-prefix cache; the
+    torch path still goes through both."""
+    from types import SimpleNamespace
+    from kev import serve
+    enc = {"ids": [1, 2, 3, 4], "seg": [0, 0, 1, 1]}
+    def model(concurrent, lock):
+        def probs(e):
+            assert lock.locked() != concurrent
+            return [torch.tensor([0.25, 0.75])]
+        return SimpleNamespace(concurrent=concurrent, prefix_min_tokens=None if concurrent else 0, encode=lambda tok, rec, **kw: enc, probs=probs,
+                               probs_and_prefix=lambda e: (probs(e), "prefix"), probs_with_prefix=lambda e, p: probs(e))
+    for concurrent in (True, False):
+        s = serve.Server(checkpoint=None, tok=None, model=None, device="cpu", release_date="2026-01-01")
+        s.model = model(concurrent, s.lock)
+        ps, meta = s.probs({})
+        assert ps == [[0.25, 0.75]] and meta["state_tokens"] == 2 and not meta["prefix_cache_hit"]
+        assert len(s.prefix_cache) == (0 if concurrent or not serve.PREFIX_CACHE_SIZE else 1)
+
+
+def test_backend_resolution_vllm_is_explicit():
+    """auto never picks vLLM (it is not installed outside the Modal serving image); KEV_BACKEND=vllm does."""
+    from kev.checkpoint import Checkpoint, LoadOptions
+    ck = Checkpoint.__new__(Checkpoint)
+    assert ck.backend("cuda", LoadOptions(backend="vllm")) == "vllm" and ck.backend("cuda", LoadOptions(backend="auto")) == "torch"
 
 
 def test_rows_per_pass_is_a_token_budget():
