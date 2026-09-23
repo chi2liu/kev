@@ -185,6 +185,11 @@ class PointerHead(nn.Module):
         z = (self.k(h_opts) @ self.q(h_decide)) * self.scale
         return z if self.training or self.temperature == 1.0 else z / self.temperature
 
+    def many(self, h_decide, h_opts, owner):  # [Q,d], [sum K,d], question of each option [sum K] -> logits [sum K]
+        """forward() for many questions at once (serving batches): one pass instead of one per question."""
+        z = (self.k(h_opts) * self.q(h_decide)[owner]).sum(-1) * self.scale
+        return z if self.training or self.temperature == 1.0 else z / self.temperature
+
 
 # What a loaded model exposes to kev.serve, kev.predictors and the Space: the scoring interface both DecisionModel (torch)
 # and kev.mlx_model.MLXDecisionModel implement. tests/test_mlx.py checks the MLX class against this list.
@@ -409,14 +414,31 @@ class DecisionModel(nn.Module):
         batched = [i for i in range(len(encs)) if fits(i, prefixes[i] is not None)]
         out = {i: probs_one(self, encs[i], prefixes[i], cacheable[i]) for i in sorted(set(range(len(encs))) - set(batched))}
         if batched:
-            hidden, caches = self.graphs.run([(splits[i][0], splits[i][1], [(r["ids"], r["pos"]) for r in splits[i][2]],
-                                               None if prefixes[i] is None else prefixes[i][1]) for i in batched])
-            ps = [[F.softmax(self.head(h[r["decide"]], h[torch.tensor(r["opts"], device=self.device)]), -1) for h, r in zip(hs, splits[i][2])]
-                  for i, hs in zip(batched, hidden)]
-            flat = iter(torch.cat([p for req in ps for p in req]).cpu().split([len(p) for req in ps for p in req]))   # one device sync
-            for i, req, cache in zip(batched, ps, caches):
-                out[i] = [next(flat) for _ in req], (prefixes[i] or (len(splits[i][0]), cache, None)) if cacheable[i] else None
+            rows = [r for i in batched for r in splits[i][2]]   # every batched question, in request order
+            X, caches = self.graphs.run([(splits[i][0], splits[i][1], [(r["ids"], r["pos"]) for r in splits[i][2]],
+                                          None if prefixes[i] is None else prefixes[i][1], cacheable[i],
+                                          [[r["decide"], *r["opts"]] for r in splits[i][2]]) for i in batched])
+            for i, cache, ps in zip(batched, caches, self._split(self._readout_many(X, rows), [len(splits[i][2]) for i in batched])):
+                out[i] = ps, (prefixes[i] or (len(splits[i][0]), cache, None)) if cacheable[i] else None
         return [out[i][0] for i in range(len(encs))], [out[i][1] for i in range(len(encs))]
+
+    def _readout_many(self, X, rows):
+        """Probabilities of many questions from their picked hidden states X (per question: its <decide>, then its options),
+        in a fixed number of kernels and one device sync. -> one tensor per question."""
+        ks, starts = [len(r["opts"]) for r in rows], [0]
+        for k in ks: starts.append(starts[-1] + 1 + k)
+        owner = [q for q, k in enumerate(ks) for _ in range(k)]
+        slot = [j for k in ks for j in range(k)]
+        dec = torch.tensor(starts[:-1]).to(self.device, non_blocking=True)
+        opt, own, sl = torch.tensor([[starts[q] + 1 + j for q, j in zip(owner, slot)], owner, slot]).to(self.device, non_blocking=True)
+        z = self.head.many(X[dec], X[opt], own)
+        Z = torch.full((len(ks), max(ks)), float("-inf"), device=self.device).index_put_((own, sl), z)
+        return torch.softmax(Z, -1)[own, sl].cpu().split(ks)
+
+    @staticmethod
+    def _split(items, sizes):
+        it = iter(items)
+        return [[next(it) for _ in range(n)] for n in sizes]
 
     def trainable_parameters(self):
         return [p for p in self.parameters() if p.requires_grad]

@@ -155,6 +155,9 @@ class CudaGraphs:
         if not all(type(l) is DynamicLayer or (type(l) is LinearAttentionLayer and l.number_of_states == 1 and not l.record_past) for l in probe.layers):
             raise ValueError(f"CUDA graphs support attention and single-state DeltaNet cache layers only; got {sorted({type(l).__name__ for l in probe.layers})}")
         self.bank = Buffers(probe, GRAPH_STATES * BANK_WIDTH, GRAPH_STATES, self.device)
+        # the bank has one layout for every pass, so the state and row graphs agree on it: attention [GRAPH_STATES, heads,
+        # BANK_WIDTH, dim] with states right-aligned at the end, DeltaNet [GRAPH_STATES, *state]
+        self.bank_views = self.bank.views(GRAPH_STATES, BANK_WIDTH)
         self.rowbuf = Buffers(probe, GRAPH_TOKENS, GRAPH_ROWS, self.device)
         self.hidden = torch.zeros(GRAPH_ROWS * GRAPH_ROW * lm.config.hidden_size, dtype=self.dtype, device=self.device)
 
@@ -242,37 +245,37 @@ class CudaGraphs:
 
     @torch.no_grad()
     def run(self, requests):
-        """requests = [(state ids, state positions, rows, cached prefix cache or None)], each admitted. Returns, per
-        request, its rows' hidden states and its state's cache (the cached one, or a new one). States of a similar length
-        share a state pass (identical states once); each request takes one bank entry, so at most GRAPH_STATES per group."""
-        hidden, caches = [None] * len(requests), [None] * len(requests)
-        for group in length_groups([len(S) for S, _, _, _ in requests], GRAPH_STATES):
-            new = {}                                                 # distinct new states of the group, in order
+        """requests = [(state ids, state positions, rows, cached prefix cache or None, keep, picks)], each admitted; rows =
+        [(ids, positions)], picks = per row the positions whose hidden states are wanted. -> (the picked hidden states,
+        float32, [sum of picks, d] in request, row, pick order; per request its state's cache: the cached one, a new one if
+        `keep`, else None). States of a similar length share a state pass (identical states once); each request takes one
+        bank entry, so at most GRAPH_STATES per group."""
+        parts, order, caches = [], [], [None] * len(requests)
+        for group in length_groups([len(r[0]) for r in requests], GRAPH_STATES):
+            new = {}                                                 # distinct new states of the group -> (ids, positions, keep)
             for i in group:
-                S, Sp, _, cached = requests[i]
-                if cached is None: new.setdefault(tuple(S), (S, Sp))
+                S, Sp, _, cached, keep, _ = requests[i]
+                if cached is None: new[tuple(S)] = (S, Sp, keep or new.get(tuple(S), (0, 0, False))[2])
             made = dict(zip(new, self.states(list(new.values()), bucket(max(map(len, new)))))) if new else {}
             entry = {S: j for j, S in enumerate(new)}                # cached states go into the entries after the new ones
-            rows, sources, free = [], [], len(new)
+            rows, sources, picks, free = [], [], [], len(new)
             for i in group:                                          # after the state pass: its padded entries are written
-                S, _, rs, cached = requests[i]
+                S, _, rs, cached, _, ps = requests[i]
                 if cached is None: e, caches[i] = entry[tuple(S)], made[tuple(S)]
                 else: e, free, caches[i] = free, free + 1, cached; self.load_state(e, cached, len(S))
-                rows += rs; sources += [(e, len(S))] * len(rs)
-            out = iter(self.rows(rows, sources))
-            for i in group: hidden[i] = [next(out) for _ in requests[i][2]]
-        return hidden, caches
-
-    def _bank(self):
-        """The bank, viewed once for all: attention [GRAPH_STATES, heads, BANK_WIDTH, dim] (states right-aligned at the
-        end), DeltaNet [GRAPH_STATES, *state]. One layout for every pass, so the state and row graphs agree on it."""
-        return self.bank.views(GRAPH_STATES, BANK_WIDTH)
+                rows += rs; sources += [(e, len(S))] * len(rs); picks += ps
+            parts.append(self.rows(rows, sources, picks)); order += group
+        rank = {i: k for k, i in enumerate(order)}                  # groups ran out of request order: put it back
+        sizes = [sum(map(len, requests[i][5])) for i in order]
+        starts = [sum(sizes[:k]) for k in range(len(order))]
+        index = [starts[rank[i]] + j for i in range(len(requests)) for j in range(sizes[rank[i]])]
+        return torch.cat(parts).index_select(0, torch.tensor(index).to(self.device, non_blocking=True)), caches
 
     @torch.no_grad()
     def states(self, items, Sb):
-        """State pass for up to GRAPH_STATES states, items = [(ids, pos)] each at most Sb <= GRAPH_STATE tokens. Leaves
-        state i in bank entry i and returns one DynamicCache per state, equal to the eager prefix pass's (views of one
-        copy of the bank: the bank belongs to the next pass)."""
+        """State pass for up to GRAPH_STATES states, items = [(ids, pos, keep)] each at most Sb <= GRAPH_STATE tokens.
+        Leaves state i in bank entry i and returns, for each kept state, a DynamicCache equal to the eager prefix pass's
+        (None for the others: copying every state of a batch cost more than the passes)."""
         Nb = count_bucket(len(items))
 
         def body(buf):   # buf rows = [ids | positions | real length], left-padded
@@ -281,57 +284,67 @@ class CudaGraphs:
             q, k = i[None, :, None], i[None, None, :]
             allow = ((k <= q) & (k >= pad[:, :, None])) | (k == q)
             views = [(a[:Nb, :, BANK_WIDTH - Sb:], b[:Nb, :, BANK_WIDTH - Sb:]) if attention else (a[:Nb], b[:Nb])
-                     for (attention, *_), (a, b) in zip(self.bank.slots, self._bank())]
+                     for (attention, *_), (a, b) in zip(self.bank.slots, self.bank_views)]
             self._forward(buf[:, :Sb], buf[:, Sb:2 * Sb], self._mask(allow), (i[None] >= pad).long(), self._cache(views, 0, False))
 
-        rows = [[self.pad_id] * (Sb - len(ids)) + list(ids) + [0] * (Sb - len(ids)) + list(pos) + [len(ids)] for ids, pos in items]
+        rows = [[self.pad_id] * (Sb - len(ids)) + list(ids) + [0] * (Sb - len(ids)) + list(pos) + [len(ids)] for ids, pos, _ in items]
         self._replay(("states", Nb, Sb), body, rows + [[self.pad_id] * Sb + [0] * Sb + [0]] * (Nb - len(items)))
-        n = len(items)
-        copies = [(a[:n, :, BANK_WIDTH - Sb:].clone(), b[:n, :, BANK_WIDTH - Sb:].clone()) if attention else (a[:n].clone(), b[:n].clone())
-                  for (attention, *_), (a, b) in zip(self.bank.slots, self._bank())]
-        out = []
-        for j, (ids, _) in enumerate(items):
-            cache = DynamicCache(config=self.lm.config)
-            for layer, (a, b) in zip(cache.layers, copies):
+        out = []   # a cache for each kept state: its own copy of the bank entry (the bank belongs to the next pass)
+        for j, (ids, _, keep) in enumerate(items):
+            if not keep: out.append(None); continue
+            cache, S = DynamicCache(config=self.lm.config), len(ids)
+            for layer, (a, b) in zip(cache.layers, self.bank_views):
                 if is_attention(layer):
-                    layer.keys, layer.values = a[j:j + 1, :, Sb - len(ids):], b[j:j + 1, :, Sb - len(ids):]
+                    layer.keys, layer.values = a[j:j + 1, :, BANK_WIDTH - S:].clone(), b[j:j + 1, :, BANK_WIDTH - S:].clone()
                     layer.dtype, layer.device, layer.is_initialized = self.dtype, self.device, True
                 else:
-                    set_linear(layer, a[j:j + 1], b[j:j + 1], True)
+                    set_linear(layer, a[j:j + 1].clone(), b[j:j + 1].clone(), True)
             out.append(cache)
         return out
 
     @torch.no_grad()
     def load_state(self, entry, cache, S):
         """Copy a cached state (a DynamicCache of S <= BANK_WIDTH tokens, from either path) into bank entry `entry`."""
-        for layer, v in zip(cache.layers, self._bank()):
+        for layer, v in zip(cache.layers, self.bank_views):
             for buf, t in zip(v, layer_tensors(layer)):
                 if is_attention(layer): buf[entry, :, BANK_WIDTH - S:].copy_(t[0, :, t.shape[-2] - S:])
                 else: buf[entry].copy_(t[0])
 
     @torch.no_grad()
-    def rows(self, rows, sources):
-        """Hidden states [L_i, d] (float32) of question rows, rows = [(ids, pos)], sources[i] = (bank entry, state length)
-        of row i's state. The rows see the last Sr positions of the bank, Sr the longest state rounded up to a power of
-        two (it only lengthens attention). Runs as few row passes as the buffers allow."""
-        out = [None] * len(rows)
+    def rows(self, rows, sources, picks=None):
+        """Hidden states of question rows, rows = [(ids, pos)], sources[i] = (bank entry, state length) of row i's state.
+        With picks (per row, the positions wanted): one float32 tensor [sum of picks, d] in row order; without, one
+        [L_i, d] tensor per row. The rows see the last Sr positions of the bank, Sr the longest state rounded up to a
+        power of two (it only lengthens attention). Runs as few row passes as the buffers allow."""
+        parts, order = [], []
         for idx in length_groups([len(ids) for ids, _ in rows], GRAPH_ROWS):
             Lb, Sr = bucket(max(len(rows[i][0]) for i in idx)), pow2(max(16, max(sources[i][1] for i in idx)))
             group = min(GRAPH_ROWS, GRAPH_TOKENS // (Sr + Lb))
             group = max(n for n in range(1, group + 1) if count_bucket(n) <= group)   # the most rows whose padded count fits
             for start in range(0, len(idx), group):
                 part = idx[start:start + group]
-                for i, h in zip(part, self._row_pass([rows[i] for i in part], [sources[i] for i in part], Sr, Lb)): out[i] = h
-        return out
+                h = self._row_pass([rows[i] for i in part], [sources[i] for i in part], Sr, Lb)
+                if picks is None:
+                    parts += [h[r, :len(rows[i][0])].float() for r, i in enumerate(part)]
+                else:   # only the wanted positions leave the pass buffer
+                    flat = [r * Lb + p for r, i in enumerate(part) for p in picks[i]]
+                    parts.append(h.flatten(0, 1).index_select(0, torch.tensor(flat).to(self.device, non_blocking=True)).float())
+                order += part
+        if picks is None: return [parts[k] for k in sorted(range(len(order)), key=order.__getitem__)]
+        starts, at = {}, 0
+        for i in order: starts[i] = at; at += len(picks[i])
+        index = [starts[i] + j for i in range(len(rows)) for j in range(len(picks[i]))]
+        return torch.cat(parts).index_select(0, torch.tensor(index).to(self.device, non_blocking=True))
 
     def _row_pass(self, rows, sources, Sr, Lb):
+        """One row pass; -> the pass buffer [rows, Lb, d] (valid until the next pass)."""
         Nb, T = count_bucket(len(rows)), Sr + Lb
         hidden = self.hidden[:Nb * Lb * self.lm.config.hidden_size].view(Nb, Lb, -1)
 
         def body(buf):   # buf rows = [ids | positions | row length | state length | bank entry]
             rowlen, plen, entry = buf[:, 2 * Lb:2 * Lb + 1], buf[:, 2 * Lb + 1:2 * Lb + 2], buf[:, 2 * Lb + 2]
             views = self.rowbuf.views(Nb, T)
-            for (attention, *_), dst, src in zip(self.bank.slots, views, self._bank()):   # each row's state, from the bank
+            for (attention, *_), dst, src in zip(self.bank.slots, views, self.bank_views):   # each row's state, from the bank
                 for d, s in zip(dst, src):
                     if attention: d[:, :, :Sr].copy_(s[:, :, BANK_WIDTH - Sr:].index_select(0, entry))
                     else: d.copy_(s.index_select(0, entry))
@@ -343,12 +356,11 @@ class CudaGraphs:
 
         uploads = [list(ids) + [self.pad_id] * (Lb - len(ids)) + list(p) + [0] * (Lb - len(p)) + [len(ids), S, e] for (ids, p), (e, S) in zip(rows, sources)]
         self._replay(("rows", Nb, Lb, Sr), body, uploads + [[self.pad_id] * Lb + [0] * Lb + [0, 0, 0]] * (Nb - len(rows)))
-        h = hidden[:len(rows)].float()
-        return [h[r, :len(ids)] for r, (ids, _) in enumerate(rows)]
+        return hidden[:len(rows)]
 
     # Single-request forms, for DecisionModel.prefix / _rows_hidden (tests, scripts, the unbatched callers)
     def prefix(self, ids, pos):
-        return self.states([(ids, pos)], bucket(len(ids)))[0] if bucket(len(ids)) <= GRAPH_STATE else None
+        return self.states([(ids, pos, True)], bucket(len(ids)))[0] if bucket(len(ids)) <= GRAPH_STATE else None
 
     def branches(self, rows, cache, prefix_len):
         if not self.admits(prefix_len, [len(ids) for ids, _ in rows], cached=True): return None
