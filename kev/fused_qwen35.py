@@ -31,6 +31,25 @@ from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
 from transformers.models.qwen3_5.modeling_qwen3_5 import apply_mask_to_padding_states, apply_rotary_pos_emb, eager_attention_forward
 
 
+class _FixedNB:
+    """A Triton kernel launched with NB=1. fla passes these kernels NB, a token-count class (cdiv of the rows by a few
+    thousand), as a constexpr and an autotuning key, but their bodies never read it: every new batch shape compiled and
+    autotuned them again, stalling a busy server for about a second each time."""
+
+    def __init__(self, kernel):
+        self.kernel = kernel
+
+    def __getitem__(self, grid):
+        launch = self.kernel[grid]
+        return lambda *args, **kwargs: launch(*args, **{**kwargs, "NB": 1})
+
+
+def _fix_nb():
+    import fla.modules.conv.triton.ops as conv, fla.modules.fused_norm_gate as gated, fla.modules.l2norm as l2, fla.modules.layernorm as norm
+    for module, name in ((conv, "causal_conv1d_fwd_kernel"), (gated, "layer_norm_gated_fwd_kernel"), (l2, "l2norm_fwd_kernel"), (norm, "layer_norm_fwd_kernel")):
+        if not isinstance(getattr(module, name), _FixedNB): setattr(module, name, _FixedNB(getattr(module, name)))
+
+
 def _concat(*linears):
     """One weight [sum(out), in] for several bias-free projections of the same input."""
     if any(l.bias is not None for l in linears): raise ValueError("fused projections assume bias-free Linear layers")
@@ -99,6 +118,7 @@ def decoder_forward(self, hidden_states, position_embeddings, attention_mask=Non
 @torch.no_grad()
 def fuse(lm):
     """Rewrite a Qwen3.5 text backbone (DecisionModel.lm, merged) in place for fused-kernel inference."""
+    _fix_nb()
     for layer in lm.layers:
         if layer.block_type == "linear_attention":
             m = layer.linear_attn
