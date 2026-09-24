@@ -15,7 +15,8 @@ more. fuse() rewrites those layers in place for inference:
 - attention: one GEMM for q (with its output gate), k and v, the q/k RMSNorms fused, the sigmoid output gate fused.
 The math is the reference's; the rounding is not (the fused kernels keep fp32
 where the reference rounds to bf16 in between), so fused and reference answers agree to bf16 noise, like the graphs.
-Only for serving: there is no backward, and the fused projections replace the originals (the merged LoRA is inside).
+Only for serving: there is no backward, the fused projections replace the originals (the merged LoRA is inside), and a
+pass that continues a cached DeltaNet state does not advance it (see deltanet_forward).
 """
 import types
 
@@ -37,23 +38,25 @@ def _concat(*linears):
 
 
 def deltanet_forward(self, hidden_states, cache_params=None, attention_mask=None, **kwargs):
-    """Qwen3_5GatedDeltaNet.forward with fused kernels; the same cache contract (conv and recurrent states updated in
-    place, has_previous_state set) as the reference."""
+    """Qwen3_5GatedDeltaNet.forward with fused kernels. Cache contract: a pass on an empty cache (a state) fills it, as the
+    reference does; a pass continuing a cached state (question rows) reads it and leaves it as it was. Kev's question rows
+    never continue from each other, and writing back every row's final states cost as much as reading them."""
     hidden_states = apply_mask_to_padding_states(hidden_states, attention_mask)
     B, T, _ = hidden_states.shape
     mixed, z, b, a = F.linear(hidden_states, self.in_proj).split(self.splits, -1)
     layer = cache_params.layers[self.layer_idx] if cache_params is not None else None
     previous = layer is not None and layer.has_previous_state[0]
+    fill = layer is not None and not previous
     mixed, conv_state = causal_conv1d(mixed, self.conv_weight, None, initial_state=layer.conv_states[0] if previous else None,
-                                      output_final_state=layer is not None, activation="silu")
+                                      output_final_state=fill, activation="silu")
     q, k, v = mixed.split([self.key_dim, self.key_dim, self.value_dim], -1)
     out, recurrent = chunk_gated_delta_rule(
         q.reshape(B, T, -1, self.head_k_dim), k.reshape(B, T, -1, self.head_k_dim), v.reshape(B, T, -1, self.head_v_dim),
-        g=a, beta=b, initial_state=layer.recurrent_states[0] if previous else None, output_final_state=layer is not None,
+        g=a, beta=b, initial_state=layer.recurrent_states[0] if previous else None, output_final_state=fill,
         use_qk_l2norm_in_kernel=True, use_gate_in_kernel=True, A_log=self.A_log, dt_bias=self.dt_bias, use_beta_sigmoid_in_kernel=True)
-    if layer is not None:
-        if layer.is_conv_states_initialized[0]: layer.conv_states[0].copy_(conv_state)   # in place: graph buffers keep their address
-        else: layer.lazy_initialization(conv_states=conv_state, conv_kernel_size=conv_state.shape[-1]); layer.conv_states[0].copy_(conv_state)
+    if fill:
+        if not layer.is_conv_states_initialized[0]: layer.lazy_initialization(conv_states=conv_state, conv_kernel_size=conv_state.shape[-1])
+        layer.conv_states[0].copy_(conv_state)   # in place: graph buffers keep their address
         layer.has_previous_state[0] = True
         cache_params.update_recurrent_state(recurrent, self.layer_idx)
     out = rms_norm_gated(out, z.reshape(B, T, -1, self.head_v_dim), self.norm.weight, None, activation="swish", eps=self.norm.variance_epsilon)
