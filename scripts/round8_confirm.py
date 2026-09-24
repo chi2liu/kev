@@ -29,7 +29,7 @@ def main():
     t = {k: served(read_json(Path(x) / "development/rows.json"), [])[0] for k, x in (("cand", cand), ("parent", parent))}
     trial = {"cand": cand, "parent": parent}
     if a.stage == "locked":
-        R = {"cand": f"runs/locked/kev-{a.size}-r8/transfer/rows.json", "parent": f"{parent_locked}/transfer/rows.json"}
+        R = {"cand": f"runs/locked/kev-{a.size}-r8-ungated/transfer/rows.json", "parent": f"{parent_locked}/transfer/rows.json"}
         rows = {k: knowable(serve(trial[k], R[k], t[k])[0]) for k in trial}
         m = {k: metrics(rows[k]) for k in trial}
         rep = {"stage": "locked", "temperature": t, "locked": {k: {"acc": m[k]["acc"], "brier": m[k]["brier"], "n": len(rows[k])} for k in trial},
