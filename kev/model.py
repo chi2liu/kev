@@ -405,21 +405,21 @@ class DecisionModel(nn.Module):
         kept, else None). With CUDA
         graphs the requests the graphed passes admit run together (kev.cuda_graphs.CudaGraphs.run: shared state and row
         passes); the rest one at a time. Rows are independent, so a request's answers do not depend on the batch."""
-        splits, prefixes = [rows_of(e) for e in encs], list(prefixes)
+        splits, pre = [rows_of(e) for e in encs], list(prefixes)   # pre: the cached prefixes plus eager ones made below
         def fits(i, cached):
             S, _, rows = splits[i]
             return self.graphs is not None and self.graphs.admits(len(S), [len(r["ids"]) for r in rows], cached)
         for i in range(len(encs)):   # a state too long for the graphed state pass gets its own eager pass, then joins the rows
-            if prefixes[i] is None and not fits(i, False) and fits(i, True): prefixes[i] = self.prefix(encs[i])
-        batched = [i for i in range(len(encs)) if fits(i, prefixes[i] is not None)]
-        out = {i: probs_one(self, encs[i], prefixes[i], keep[i]) for i in sorted(set(range(len(encs))) - set(batched))}
+            if pre[i] is None and not fits(i, False) and fits(i, True): pre[i] = self.prefix(encs[i])
+        batched = [i for i in range(len(encs)) if fits(i, pre[i] is not None)]
+        out = {i: probs_one(self, encs[i], pre[i], keep[i]) for i in sorted(set(range(len(encs))) - set(batched))}
         if batched:
             rows = [r for i in batched for r in splits[i][2]]   # every batched question, in request order
             X, caches = self.graphs.run([(splits[i][0], splits[i][1], [(r["ids"], r["pos"]) for r in splits[i][2]],
-                                          None if prefixes[i] is None else prefixes[i][1], keep[i],
+                                          None if pre[i] is None else pre[i][1], keep[i],
                                           [[r["decide"], *r["opts"]] for r in splits[i][2]]) for i in batched])
             for i, cache, ps in zip(batched, caches, self._split(self._readout_many(X, rows), [len(splits[i][2]) for i in batched])):
-                out[i] = ps, prefixes[i] or (None if cache is None else (len(splits[i][0]), cache, None))
+                out[i] = ps, pre[i] or (None if cache is None else (len(splits[i][0]), cache, None))
         return [out[i][0] for i in range(len(encs))], [out[i][1] for i in range(len(encs))]
 
     def _readout_many(self, X, rows):

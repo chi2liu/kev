@@ -54,17 +54,21 @@ class Server:
         self.release_date = self.release_date or self.checkpoint.release_date()
         self.queue, self.stopping = queue.Queue(), threading.Event()
         # the model thread gives up the GIL at every CUDA sync and waits to get it back while the event loop parses and
-        # answers requests; at Python's default 5 ms switch interval those waits stretched a batch's model time ~2x
+        # answers requests; at Python's default 5 ms switch interval those waits stretched a batch's model time ~2x.
+        # Process-wide, so close() puts it back.
+        self.switch_interval = sys.getswitchinterval()
         sys.setswitchinterval(0.0005)
         self.thread = threading.Thread(target=self._work, name="kev-model", daemon=True)
         self.thread.start()
         atexit.register(self.close)   # a daemon thread killed inside a CUDA call at interpreter exit aborts the process
 
     def close(self):
-        """Stop the model thread after its current batch; requests still queued fail."""
+        """Stop the model thread after its current batch; requests still queued fail, and so do later ones (submit)."""
+        if self.stopping.is_set(): return
         self.stopping.set(); self.thread.join()
         while not self.queue.empty():
             self.queue.get_nowait()[1].set_exception(RuntimeError("the server stopped")); self.queue.task_done()
+        sys.setswitchinterval(self.switch_interval)
 
     @property
     def prefix_min_tokens(self):
@@ -74,6 +78,7 @@ class Server:
         """Queue one record for the model thread. -> a Future of (probabilities, stats). The state prefix (tokens up to the
         first question) is cached across requests, so a repeated state only pays for its question rows. latency_ms is the
         model time of the batch the request ran in (not its wait in the queue)."""
+        if self.stopping.is_set(): raise HTTPException(503, "the server is stopping")
         try: enc = self.model.encode(self.tok, rec, max_state=SERVE_MAX_STATE, max_branch=SERVE_MAX_BRANCH)
         except ValueError as e: raise HTTPException(422, str(e))
         done = Future()

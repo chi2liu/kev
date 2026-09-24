@@ -214,8 +214,9 @@ class Checkpoint:
         if dtype != torch.float32: m.lm = m.lm.to(dtype)
         if opts.cuda_graphs and str(device).startswith("cuda") and m.hybrid:
             from .cuda_graphs import CudaGraphs
-            from .fused_qwen35 import fuse
-            if merge: fuse(m.lm)   # fused projections need the adapter folded in
+            from . import fused_qwen35
+            if merge and fused_qwen35.supported(): fused_qwen35.fuse(m.lm)   # fused projections need the adapter folded in
+            elif merge: print(f"kev: flash-linear-attention {fused_qwen35.FLA_VERSION} not installed; serving without fused kernels", flush=True)
             m.graphs = CudaGraphs(m.lm, m.pad_id)
         return m
 

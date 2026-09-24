@@ -144,7 +144,7 @@ class CudaGraphs:
         self.graphs = OrderedDict()   # key -> (graph, input buffer)
         self.pending = {}             # key -> (pass body, input buffer): buckets that ran eagerly, not captured yet
         self.eager_runs = {}          # key -> how many passes of a pending bucket ran eagerly
-        self.failed = {}              # key -> why its capture failed; the bucket keeps running eagerly
+        self.failed = {}              # key -> (why its capture failed, input buffer); the bucket keeps running eagerly
         self.captures = 0
         probe = DynamicCache(config=lm.config)   # learn the cache layout (layer kinds, state shapes, dtypes) from one eager pass
         with torch.no_grad():
@@ -186,7 +186,7 @@ class CudaGraphs:
             self.graphs.move_to_end(key)
             graph, buf = self.graphs[key]
         elif key in self.failed:
-            graph, buf = None, torch.zeros((len(rows), len(rows[0])), dtype=torch.long, device=self.device)
+            graph, buf = None, self.failed[key][1]
         else:
             graph, buf = None, self.pending.setdefault(key, (body, torch.zeros((len(rows), len(rows[0])), dtype=torch.long, device=self.device)))[1]
             self.eager_runs[key] = self.eager_runs.get(key, 0) + 1
@@ -217,10 +217,10 @@ class CudaGraphs:
             except Exception as e:   # e.g. out of memory for a new shape: serve it eagerly rather than stop serving
                 # a failed capture_end leaves the allocator routing this thread's allocations into the graph pool, which
                 # would fail every later capture and let eager passes allocate graph memory: end that explicitly
-                try: torch._C._cuda_endAllocateToPool(self.device.index, self.pool)
-                except RuntimeError: pass
-                self.failed[key] = f"{type(e).__name__}: {e}"
-                print(f"kev.cuda_graphs: capturing {key} failed, it runs eagerly: {self.failed[key]}", flush=True)
+                try: getattr(torch._C, "_cuda_endAllocateToPool", lambda *a: None)(self.device.index, self.pool)   # private API: best effort
+                except Exception: pass
+                self.failed[key] = (f"{type(e).__name__}: {e}", buf)
+                print(f"kev.cuda_graphs: capturing {key} failed, it runs eagerly: {self.failed[key][0]}", flush=True)
                 continue
             finally:
                 current.wait_stream(self.stream)
@@ -230,7 +230,8 @@ class CudaGraphs:
     def capture_due(self, idle):
         """Capture one pending graph now? Always when idle; under load once a bucket keeps running eagerly (HOT_BUCKET
         eager passes), because a request arriving meanwhile waits for the capture (~0.4 s)."""
-        return bool(self.pending) and (idle or max(self.eager_runs.values()) >= HOT_BUCKET)
+        runs = list(self.eager_runs.values())   # a snapshot: wait_idle and /v1/models call this off the model thread
+        return bool(runs) and (idle or max(runs) >= HOT_BUCKET)
 
     def stats(self):
         return {"captured": self.captures, "kept": len(self.graphs), "pending": len(self.pending), "failed": len(self.failed)}

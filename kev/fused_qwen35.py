@@ -50,6 +50,14 @@ def _fix_nb():
         if not isinstance(getattr(module, name), _FixedNB): setattr(module, name, _FixedNB(getattr(module, name)))
 
 
+FLA_VERSION = "0.5.2"   # the flash-linear-attention these kernels and _fix_nb were written and measured against
+
+
+def supported():
+    import fla
+    return fla.__version__ == FLA_VERSION
+
+
 def _concat(*linears):
     """One weight [sum(out), in] for several bias-free projections of the same input."""
     if any(l.bias is not None for l in linears): raise ValueError("fused projections assume bias-free Linear layers")
@@ -93,7 +101,7 @@ def attention_forward(self, hidden_states, position_embeddings, attention_mask, 
     v = v.reshape(*shape, -1, self.head_dim).transpose(1, 2)
     if past_key_values is not None: k, v = past_key_values.update(k, v, self.layer_idx)
     attend = ALL_ATTENTION_FUNCTIONS.get_interface(self.config._attn_implementation, eager_attention_forward)
-    out, weights = attend(self, q, k, v, attention_mask, dropout=0.0, scaling=self.scaling, **kwargs)
+    out, weights = attend(self, q, k, v, attention_mask, dropout=0.0, scaling=self.scaling, **kwargs)   # [B, T, heads, dim]: transposed back already
     return self.o_proj(sigmoidglu(gate.reshape(*shape, -1), out.reshape(*shape, -1))), weights
 
 
@@ -117,7 +125,10 @@ def decoder_forward(self, hidden_states, position_embeddings, attention_mask=Non
 
 @torch.no_grad()
 def fuse(lm):
-    """Rewrite a Qwen3.5 text backbone (DecisionModel.lm, merged) in place for fused-kernel inference."""
+    """Rewrite a Qwen3.5 text backbone (DecisionModel.lm, merged) in place for fused-kernel serving. Contract changes
+    against the reference: no backward, and a pass that continues a cached DeltaNet state leaves that state as it was
+    (Kev's question rows never continue from each other). Needs flash-linear-attention FLA_VERSION: it patches fla's
+    kernel launches (_fix_nb), so kev.checkpoint only calls this when that version is installed (supported())."""
     _fix_nb()
     for layer in lm.layers:
         if layer.block_type == "linear_attention":
