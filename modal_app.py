@@ -450,13 +450,15 @@ def pull(name: str):
 
 
 @app.local_entrypoint()
-def locked_test(trial: str, name: str, decision: str = "evals/v4/decision-v4", transfer: str = "evals/v4/transfer-v4", gpu: str = GPU, redo_interrupted: bool = False):
-    """One locked-test read for a promoted trial (path under the runs volume, e.g. v4-4b-baseline/01-trial-1)."""
+def locked_test(trial: str, name: str, decision: str = "evals/v4/decision-v4", transfer: str = "evals/v4/transfer-v4", gpu: str = GPU, redo_interrupted: bool = False,
+                timeout: int = 3600, memory_mb: int = 49152):
+    """One locked-test read for a promoted trial (path under the runs volume, e.g. v4-4b-baseline/01-trial-1). A 27B needs
+    --gpu H200 --timeout 14400 --memory-mb 131072 (its bf16 weights are staged through host memory while loading)."""
     from kev.suite import read_json
     target = ROOT / "runs/locked" / name
     if (target / "summary.json").exists() and all(k in read_json(target / "summary.json")["suites"] for k in ("decision", "transfer")):
         raise FileExistsError(f"{target} is complete; the locked test is read once per candidate")
-    fn = modal.Function.from_name(APP_NAME, "run_locked_test").with_options(gpu=gpu)
+    fn = modal.Function.from_name(APP_NAME, "run_locked_test").with_options(gpu=gpu, timeout=timeout, memory=(32768, memory_mb))
     summary = fn.remote(trial, name, {"decision": decision, "transfer": transfer}, local_git_commit(), redo_interrupted)
     import shutil
     if target.exists(): shutil.rmtree(target)   # local copy only; the volume is the record
