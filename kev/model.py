@@ -197,12 +197,11 @@ SCORING_INTERFACE = ("encode", "forward", "probs", "probs_and_prefix", "probs_wi
                      "head", "backend", "dtype", "device", "hybrid", "option_isolation", "prefix_min_tokens")
 
 
-def probs_one(model, enc, prefix, cacheable):
-    """-> (probs, prefix to keep) for one request, on any backend: the plain pass when its prefix is not worth keeping,
-    the question rows on the cached prefix on a hit, one pass that also returns the prefix on a miss."""
-    if not cacheable: return model.probs(enc), None
+def probs_one(model, enc, prefix, keep):
+    """-> (probs, prefix to keep) for one request, on any backend: the question rows on the cached prefix on a hit, one
+    pass that also returns the prefix when it is to be kept, the plain pass otherwise."""
     if prefix is not None: return model.probs_with_prefix(enc, prefix), prefix
-    return model.probs_and_prefix(enc)
+    return model.probs_and_prefix(enc) if keep else (model.probs(enc), None)
 
 
 class DecisionModel(nn.Module):
@@ -400,9 +399,10 @@ class DecisionModel(nn.Module):
         return [F.softmax(z, -1).cpu() for z in self._readout(h, enc)]
 
     @torch.no_grad()
-    def probs_batch(self, encs, prefixes, cacheable):
+    def probs_batch(self, encs, prefixes, keep):
         """kev.serve's model thread: several requests at once. prefixes[i] is request i's cached state prefix or None;
-        cacheable[i] whether its prefix is worth keeping. -> (probs per request, prefix to keep per request). With CUDA
+        keep[i] whether to return its new prefix. -> (probs per request, prefix per request: the cached one, the new one if
+        kept, else None). With CUDA
         graphs the requests the graphed passes admit run together (kev.cuda_graphs.CudaGraphs.run: shared state and row
         passes); the rest one at a time. Rows are independent, so a request's answers do not depend on the batch."""
         splits, prefixes = [rows_of(e) for e in encs], list(prefixes)
@@ -412,14 +412,14 @@ class DecisionModel(nn.Module):
         for i in range(len(encs)):   # a state too long for the graphed state pass gets its own eager pass, then joins the rows
             if prefixes[i] is None and not fits(i, False) and fits(i, True): prefixes[i] = self.prefix(encs[i])
         batched = [i for i in range(len(encs)) if fits(i, prefixes[i] is not None)]
-        out = {i: probs_one(self, encs[i], prefixes[i], cacheable[i]) for i in sorted(set(range(len(encs))) - set(batched))}
+        out = {i: probs_one(self, encs[i], prefixes[i], keep[i]) for i in sorted(set(range(len(encs))) - set(batched))}
         if batched:
             rows = [r for i in batched for r in splits[i][2]]   # every batched question, in request order
             X, caches = self.graphs.run([(splits[i][0], splits[i][1], [(r["ids"], r["pos"]) for r in splits[i][2]],
-                                          None if prefixes[i] is None else prefixes[i][1], cacheable[i],
+                                          None if prefixes[i] is None else prefixes[i][1], keep[i],
                                           [[r["decide"], *r["opts"]] for r in splits[i][2]]) for i in batched])
             for i, cache, ps in zip(batched, caches, self._split(self._readout_many(X, rows), [len(splits[i][2]) for i in batched])):
-                out[i] = ps, (prefixes[i] or (len(splits[i][0]), cache, None)) if cacheable[i] else None
+                out[i] = ps, prefixes[i] or (None if cache is None else (len(splits[i][0]), cache, None))
         return [out[i][0] for i in range(len(encs))], [out[i][1] for i in range(len(encs))]
 
     def _readout_many(self, X, rows):

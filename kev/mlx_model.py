@@ -143,7 +143,7 @@ class MLXDecisionModel:
         if enc["seg"].count(0) != Ls: raise ValueError("prefix does not match this record's state")
         return self._branch_probs(enc, cache)
 
-    def probs_batch(self, encs, prefixes, cacheable):
+    def probs_batch(self, encs, prefixes, keep):
         """kev.serve's batch call: one request at a time on Metal."""
-        out = [probs_one(self, e, p, c) for e, p, c in zip(encs, prefixes, cacheable)]
+        out = [probs_one(self, e, p, k) for e, p, k in zip(encs, prefixes, keep)]
         return [o[0] for o in out], [o[1] for o in out]

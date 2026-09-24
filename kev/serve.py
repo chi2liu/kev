@@ -105,21 +105,25 @@ class Server:
                 with self.lock: graphs.capture_pending(limit=1)
 
     def _run(self, encs):
-        """One batch through model.probs_batch, with the prefix cache. -> per request (probs, stats)."""
+        """One batch through model.probs_batch, with the prefix cache. -> per request (probs, stats). Only the states that
+        stay in the cache are kept: the last PREFIX_CACHE_SIZE distinct ones of the batch (the LRU would evict the rest)."""
         cache = self.prefix_cache
         states = [enc["seg"].count(0) for enc in encs]
         keys = [(tuple(enc["ids"][:Ls]), bool(enc.get("option_isolation"))) for enc, Ls in zip(encs, states)]
         cacheable = [bool(PREFIX_CACHE_SIZE) and Ls >= self.prefix_min_tokens for Ls in states]
         prefixes = [cache.get(k) if c else None for k, c in zip(keys, cacheable)]
+        survivors = list(dict.fromkeys(k for k, c in zip(reversed(keys), reversed(cacheable)) if c))[:PREFIX_CACHE_SIZE]
+        keep = [c and k in survivors for k, c in zip(keys, cacheable)]
         sync(self.device); t = time.time()
-        ps, kept = self.model.probs_batch(encs, prefixes, cacheable)
+        ps, kept = self.model.probs_batch(encs, prefixes, keep)
         sync(self.device); dt = round((time.time() - t) * 1000, 1)
         self.batches += 1; self.batched_requests += len(encs)
         for key, use, prefix, fresh in zip(keys, cacheable, prefixes, kept):
             if not use: continue
+            self.prefix_hits += prefix is not None; self.prefix_misses += prefix is None
+            if fresh is None: continue
             cache.pop(key, None); cache[key] = fresh              # (re)insert = most recently used
             while len(cache) > PREFIX_CACHE_SIZE: cache.pop(next(iter(cache)))
-            self.prefix_hits += prefix is not None; self.prefix_misses += prefix is None
         return [([q.tolist() for q in p], {"tokens": len(enc["ids"]), "state_tokens": Ls, "latency_ms": dt, "prefix_cache_hit": prefix is not None})
                 for enc, p, Ls, prefix in zip(encs, ps, states, prefixes)]
 
