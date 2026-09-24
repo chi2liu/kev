@@ -91,13 +91,18 @@ Title Case sections, API tables, Authors + License); model cards are formal.
   the playground proxies :8009)
   - TypeSafe-compatible: `POST /v1/systemone`, `GET /v1/models` (model cards for `kev-latest` and `jev-latest`, plus device, dtype, temperature and prefix-cache stats), an `x-typesafe-request-id` header on every response, and bearer auth when `KEV_API_KEY` is set (unset = open server).
   - SDK: `TypeSafeClient(api_key="local", base_url="http://127.0.0.1:8009", model="kev-latest")`
-  - CUDA: bf16 + CUDA graphs by default (`kev/cuda_graphs.py`, `LoadOptions.cuda_graphs`, `KEV_CUDA_GRAPHS=0` to decline). A server pass
-    was kernel-launch bound (~60 ms on an H100 at any length); graphs replay bucketed passes (state left-padded, rows right-padded, masked
-    exactly; equal to eager up to bf16 reassociation), a new bucket runs eagerly and is captured when the server is idle (or once it keeps recurring).
-    `kev.serve.Server` runs every pass on one model thread that batches whatever is queued (`DecisionModel.probs_batch`: one state pass for the
-    batch's new states into a fixed-layout state bank, row passes gathering each row's state from it, grouped by length); `Server.lock` excludes it.
-    Measure with `uv run modal run modal_app.py::serving --run <hub id> --gpu <GPU> --name <name>` (`scripts/serving_bench.py`: latency with
-    and without graphs, parity vs fp32; reports in `runs/serving-*`). `tests/test_model.py::test_cuda_graphs_match_eager` needs CUDA (run it on Modal).
+  - CUDA: bf16, fused kernels and CUDA graphs by default (`LoadOptions.cuda_graphs`, `KEV_CUDA_GRAPHS=0` to decline). A server pass was
+    kernel-launch bound (~60 ms on an H100 at any length). `kev/fused_qwen35.py` rewrites the merged Qwen3.5 layers with fla Triton kernels
+    (fla pinned to 0.5.2 in the images: it patches fla's NB-keyed kernel launches; a pass continuing a cached DeltaNet state does not write
+    it back). `kev/cuda_graphs.py` replays bucketed passes (state left-padded, rows right-padded, masked exactly; equal to eager up to bf16
+    reassociation) and owns admission (`admits`), batches (`run`), capture policy (`capture_due`: idle, or a bucket that keeps recurring) and
+    `stats()`; a failed capture leaves its bucket eager. `kev.serve.Server` runs every pass on one model thread that batches whatever is
+    queued (`DecisionModel.probs_batch`; `probs_one` is the per-request rule every backend shares); `/v1/systemone` is async, `Server.lock`
+    excludes the model thread, `wait_idle()` waits for answers and captures, every response carries `server-timing`.
+    Measure with `uv run modal run modal_app.py::serving --run <hub id> --gpu <GPU> --name <name>` (`scripts/serving_bench.py`: latency,
+    parity vs fp32, throughput at 1/8/32/64 in-process clients; reports in `runs/serving-*` (graphs only) and `runs/fused-*`).
+    `tests/test_model.py::test_cuda_graphs_match_eager` needs CUDA (run it on Modal). Over HTTP, Modal's `asgi_app` path caps a container at
+    ~40-50 req/s; `modal.experimental.http_server` served ~99 req/s at 64 clients (Kev-4B, H100).
     Loading merges the fp32 adapter straight into bf16 weights (same bits as the old fp32 merge + cast), so Kev-9B needs ~17 GB, not 36 GB.
 - Extra endpoints for the demo: `POST /v1/systemone/permute` (one Choice under n option orders), `POST /v1/systemone/separate`
   (each question alone; packed-vs-separate comparison). `/v1/systemone` also returns `latency_ms`.
