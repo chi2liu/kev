@@ -23,7 +23,7 @@ from kev.data import api_request, load_records
 from kev.device import default_device
 from kev.metrics import EPSILON, grouped_metrics, metrics, unknowable_report
 from kev.model import ContextOverflow
-from kev.predictors import LocalPredictor, RemotePredictor, RotationAveraged
+from kev.predictors import CanonicalOptions, LocalPredictor, RemotePredictor, RotationAveraged
 from kev.suite import CONTEXT, ENCODING, digest, load_split, read_manifest, record_digest, write_json
 
 
@@ -179,9 +179,11 @@ def main():
                     help="suite partition to score (train: teacher predictions for distillation; --allow-test reads the locked test instead)")
     ap.add_argument("--date_facts", action="store_true", help="apply kev.api.with_date_facts to every state before scoring (the opt-in serving preprocessor); reported in report.json")
     ap.add_argument("--rotations", type=int, default=1, help="average every Choice question over this many cyclic option rotations (kev.predictors.RotationAveraged); 1 = one order")
+    ap.add_argument("--canonical_options", action="store_true", help="sort every Choice question's options by key before scoring (kev.predictors.CanonicalOptions), so a permutation of the caller's options cannot change the answer; reported in report.json")
     a = ap.parse_args()
     if bool(a.run) == bool(a.remote): ap.error("give exactly one of --run or --remote")
     if a.rotations < 1: ap.error("--rotations must be >= 1")
+    if a.canonical_options and a.rotations > 1: ap.error("--canonical_options and --rotations both fix option order; choose one")
     if a.remote_concurrency < 1: ap.error("--remote-concurrency must be >= 1")
     if bool(a.suite) == bool(a.data): ap.error("give exactly one of --suite or --data")
     if a.data:
@@ -196,9 +198,9 @@ def main():
     if a.date_facts:
         records = [{**r, "state": with_date_facts(r["state"])} for r in records]
     predictor = RemotePredictor(a.remote, a.remote_model, os.environ.get("KEV_REMOTE_API_KEY", "local"), concurrency=a.remote_concurrency) if a.remote else LocalPredictor(a.run, a.device, LoadOptions.from_env(), context=context)
-    scorer = RotationAveraged(predictor, a.rotations) if a.rotations > 1 else predictor
+    scorer = RotationAveraged(predictor, a.rotations) if a.rotations > 1 else CanonicalOptions(predictor) if a.canonical_options else predictor
     report, _ = evaluate_records(records, scorer, a.out, heldout_sources=tuple(heldout), skip_overlong=skip_overlong)
-    report.update(suite_sha256=source_hash, data=a.data, date_facts=a.date_facts, rotations=a.rotations, run=a.run or a.remote, split=split,
+    report.update(suite_sha256=source_hash, data=a.data, date_facts=a.date_facts, rotations=a.rotations, canonical_options=a.canonical_options, run=a.run or a.remote, split=split,
                   calibration_applied=predictor.temperature != 1.0 if not a.remote else None,
                   remote={"base_url": a.remote, "requested_model": a.remote_model, "served_model": predictor.served_model, "concurrency": a.remote_concurrency} if a.remote else None)
     write_json(Path(a.out) / "report.json", report)

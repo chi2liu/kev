@@ -908,6 +908,40 @@ def test_rotation_averaging_cancels_a_position_bias():
         RotationAveraged(biased, 1)
 
 
+def test_canonical_options_makes_a_position_bias_unobservable():
+    import math
+    from kev.api import question_keys
+    from kev.predictors import CanonicalOptions
+    content = {"a": 1.0, "b": 0.0, "c": -1.0}; position = [2.0, 0.0, 0.0]         # the first slot is favoured by +2 logits
+
+    def biased(record):
+        out = {"probabilities": {}, "logits": {}, "inference_temperature": 1.0, "latency_ms": 1.0}
+        for qid, q in record["questions"].items():
+            keys = question_keys(q["type"], q.get("criteria"))
+            z = {k: (content.get(k, 0.0) + position[i] if q["type"] == "choice" else float(i)) for i, k in enumerate(keys)}
+            s = sum(math.exp(v) for v in z.values())
+            out["logits"][qid] = z; out["probabilities"][qid] = {k: math.exp(v) / s for k, v in z.items()}
+        return out
+
+    def record(order):
+        return {"state": "s", "questions": {"c": {"type": "choice", "criteria": {k: None for k in order}},
+                                            "s": {"type": "score", "criteria": ["low", "high"]}}}
+    shuffled = record("cab")
+    assert list(CanonicalOptions.canonical(shuffled)["questions"]["c"]["criteria"]) == ["a", "b", "c"]
+    assert CanonicalOptions.canonical(shuffled)["questions"]["s"] == shuffled["questions"]["s"]   # score keeps its scale
+
+    plain, canon = biased, CanonicalOptions(biased)
+    base = canon(record("abc"))
+    assert plain(shuffled)["probabilities"]["c"] != pytest.approx(plain(record("abc"))["probabilities"]["c"])  # the bias is visible
+    for order in ("acb", "bac", "bca", "cab", "cba"):
+        got = canon(record(order))
+        for k in "abc":                                                            # one forward pass, bit-identical
+            assert got["probabilities"]["c"][k] == base["probabilities"]["c"][k]
+            assert got["logits"]["c"][k] == base["logits"]["c"][k]
+    assert canon(record("abc"))["latency_ms"] == 1.0                               # no extra passes
+    assert canon(record("abc"))["probabilities"]["s"] == pytest.approx(biased(record("abc"))["probabilities"]["s"])
+
+
 def _leaderboard_row(study, trial, acc, seed=0, cfg="c1"):
     return {"study": study, "trial": trial, "base": "B", "seed": seed, "config": {"k": cfg, "seed": seed}, "config_sha256": f"{cfg}:{seed}", "legacy": False,
             "gates": {"complete_coverage": True, "isolation_and_packing": True}, "transfer_acc": acc, "transfer_brier": 0.3,

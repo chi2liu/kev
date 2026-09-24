@@ -140,6 +140,35 @@ class RotationAveraged:
         return out
 
 
+class CanonicalOptions:
+    """Score every Choice question with its options in one deterministic order, sorted by option key, so that the same
+    set of options always becomes the same token sequence. A caller who permutes the options then cannot change any
+    probability: the model is handed an identical request, and the answer, which is keyed by option, is read back in
+    the caller's order. Noul and Score keep the order they were given, which is part of their meaning, as in
+    RotationAveraged.
+
+    This removes order dependence by canonicalising the input rather than by averaging over orders, so it costs one
+    forward pass instead of `rotations` of them, and the invariance is exact in any precision because the two requests
+    are the same computation rather than two computations that should agree. It does not remove a slot preference: the
+    model may still favour whichever option sorts first. Sorting on the key rather than on its tokens keeps the
+    canonical order the same across backends."""
+
+    def __init__(self, predictor):
+        self.predictor = predictor
+        self.temperature = getattr(predictor, "temperature", None)
+        self.concurrency = getattr(predictor, "concurrency", 1)
+
+    @staticmethod
+    def canonical(record):
+        def sort(q):
+            if q["type"] != "choice": return q
+            return {**q, "criteria": {key: q["criteria"][key] for key in sorted(q["criteria"])}}
+        return {**record, "questions": {qid: sort(q) for qid, q in record["questions"].items()}}
+
+    def __call__(self, record):
+        return self.predictor(self.canonical(record))
+
+
 class JevPredictor:
     """Jev through the AI SDK worker (playground/scripts/jev-evaluate.mjs); every call is counted against a token budget."""
     def __init__(self, key, budget=0.1, max_calls=700):
