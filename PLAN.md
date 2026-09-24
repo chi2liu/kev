@@ -98,6 +98,23 @@ Reported, never gating:
 
 **Next (to be registered, not read):** the 9B recipe minus the MNLI soft targets (keep them hard) isolates the WANLI question. It needs fresh panels (both round-5 panels have now been read by these candidates) and a WANLI panel disjoint from the 256 items, large enough that a 1 pp point threshold is not three questions. The external gates in this round were point estimates on 89–256 questions; the next registration should use paired intervals with a margin sized to the suite.
 
+## JevBench (public items) and the next targets (2026-09-24; measured, not registered)
+
+**Measurement.** JevBench (Benchmark Heaven, `fstandhartinger/jevbench@2fa63fa`, MIT) ranks our superseded Qwen3 previews (commit `20fa626`; kev 4B #24, score 36.1; sealed accuracy 22 %, below its 29.3 % chance line). Its unchanged harness (`typesafe` adapter) against the released Qwen3.5 family served by `skills/kev-deploy` on Modal, all 231 public items, 0 failures (`runs/jevbench-public/`):
+
+| | easy (48) | standard (72) | hard (111) | all public | hard ECE / Brier |
+|---|---|---|---|---|---|
+| Kev-9B | 1.000 | 0.903 | 0.568 | 0.762 | 0.19 / 0.58 |
+| Kev-4B | 1.000 | 0.903 | 0.486 | 0.723 | 0.26 / 0.72 |
+| Kev-0.8B | 1.000 | 0.736 | 0.333 | 0.597 | 0.25 / 0.79 |
+| Jev 1.13.0 (their board; tiers include held-out items) | 1.000 | 0.990 | 0.741 | 0.866 | 0.06 / 0.34 |
+
+Kev-9B vs Jev by hard family: long_policy 0.37 vs 0.61, tradeoff 0.50 vs 0.92, probability 0.50 vs 0.80, judge_hard 0.53 vs 0.79, ambiguous 0.57 vs 0.79, multi_hop 0.78 vs 0.86, temporal_numeric 0.20 vs 0.27; adversarial, routing_hard and trap at or near ceiling. Not paired (Jev's per-item outcomes are not published) and public items only.
+
+**Target A: hard-tier calibration.** Kev is overconfident exactly where it is wrong: hard ECE 0.19-0.26 vs Jev 0.06, on an axis JevBench weights equally with accuracy. Our temperatures are fitted on decision-v7 development rows, which are mostly easy. Next registration: fit and check calibration on a frozen *hard* development set of our own (below), report ECE / Brier / coverage at 5 % error by difficulty, and gate a release on hard-set calibration not getting worse; candidates: a difficulty-aware temperature (per question type or by state length), the round-3 calibration losses on hard records only, and Kev-27B (already best calibrated on every suite).
+
+**Target B: skill data for the failed families, not benchmark data.** Build `hard-v1`, our own suite of the *skills* JevBench's hard tier measures: long policy documents with exceptions and sublimits, trade-offs under stated priorities, probability and expected-value questions, multi-hop over several facts, dates and arithmetic, judged answers, and ambiguity (with an "insufficient" option). Label sources in order of preference: (1) programmatic generators with exact labels (`kev/contrastive.py`-style minimal pairs: change one clause, the answer flips; dates, sums, probabilities and policy arithmetic are computed, not judged); (2) open-weight teachers with agreement and the judge panel for authored long policies, as in documents-v1. Rules: never generated from, prompted with, or paraphrased from JevBench items; exact and near-duplicate screening (normalised text, n-gram overlap) against all public JevBench items before freezing; frozen development / private test split first; JevBench public stays a report-only external read, never selection; any release note discloses the data and the overlap check. JevBench's sealed half and its public-vs-sealed gap penalty are the check that this generalises rather than benchmaxxes.
+
 ## Round 8 - documents delta at 0.8B / 4B, guards sized to the suites (registered 2026-09-23T23:15Z, before any training or read)
 
 **Why.** Round 7's 0.8B and 4B arms gained +22.5 and +8.4 pp on `documents-v1` development (4B +2.6 pp [+0.5, +4.6] above Jev) with pooled externals flat (+0.4 [−0.8, +1.6], +0.0 [−1.0, +1.1]), and failed only per-suite lower bounds on suites too small to resolve a −3 pp floor (SemIf 144 questions, TypeSafe 89) plus, at 4B, WANLI-v2 (−1.3, bound −2.6) and, at 0.8B, the short-state accuracy bound (−0.9, bound −3.2). Round 7's verdicts stand: no 0.8B or 4B candidate. This round tests the same recipe at a **new seed** under guards sized to what each suite can resolve, so that the decision is not made on the reads that motivated it; the fresh confirmation sets (`documents-v1` test, `documents-v2`) are still unread by any model.
