@@ -2,10 +2,13 @@
 Run: uv run --extra serve python -m pytest tests/test_unit.py -q
 """
 import math
+from types import SimpleNamespace
+
 import pytest
 import torch
+from transformers.cache_utils import Cache, DynamicLayer, LinearAttentionLayer
 from kev.api import SystemOneRequest, choice_confidence, render, score_confidence, to_answers, to_record
-from kev.model import SPECIAL, branch_mask, encode, user_tokens
+from kev.model import DecisionModel, SPECIAL, branch_mask, encode, user_tokens
 
 
 def test_render_flattens_structured_content():
@@ -208,6 +211,42 @@ def test_graph_buckets_and_length_groups():
     assert length_groups([40, 20, 35, 30, 25, 45], 32) == [[1, 4, 3, 2, 0, 5]]            # a small pass stays whole
     assert length_groups([30] * 20 + [900], 32) == [list(range(20)), [20]]               # the outlier gets its own pass
     assert [len(g) for g in length_groups([100] * 40, 16)] == [16, 16, 8]                # capped per pass
+
+
+def test_rows_hidden_replicates_cache_without_changing_prefix(monkeypatch):
+    import kev.model as M
+
+    kv, linear = DynamicLayer(), LinearAttentionLayer()
+    kv.update(torch.ones(1, 1, 2, 2), torch.full((1, 1, 2, 2), 2.0))
+    linear.update_conv_state(torch.ones(1, 2, 2), conv_kernel_size=2)
+    linear.update_recurrent_state(torch.full((1, 2, 2), 3.0))
+    cache = Cache(layers=[kv, linear])
+
+    class LM(torch.nn.Module):
+        def forward(self, input_ids, position_ids, attention_mask, past_key_values, use_cache):
+            copied_kv, copied_linear = past_key_values.layers
+            assert copied_kv.keys.shape[0] == len(input_ids)
+            assert copied_linear.conv_states[0].shape[0] == len(input_ids)
+            assert copied_linear.recurrent_states[0].shape[0] == len(input_ids)
+            assert torch.all(copied_kv.keys == 1) and torch.all(copied_kv.values == 2)
+            assert torch.all(copied_linear.conv_states[0] == 1)
+            assert torch.all(copied_linear.recurrent_states[0] == 3)
+            copied_kv.update(torch.zeros(len(input_ids), 1, 1, 2), torch.zeros(len(input_ids), 1, 1, 2))
+            copied_linear.update_conv_state(torch.zeros(len(input_ids), 2, 1), conv_kernel_size=2)
+            copied_linear.update_recurrent_state(torch.zeros_like(copied_linear.recurrent_states[0]))
+            return SimpleNamespace(last_hidden_state=torch.ones(len(input_ids), input_ids.shape[1], 2))
+
+    model = DecisionModel.__new__(DecisionModel)
+    torch.nn.Module.__init__(model)
+    model.lm, model.device, model.pad_id = LM(), "cpu", 0
+    model.eval()
+    monkeypatch.setattr(M, "rows_per_pass", lambda rows, prefix_len=0: 2)
+    rows = [([1, 2], [2, 3]), ([3], [2]), ([4], [2])]
+    hidden = model._rows_hidden(rows, cache=cache, prefix_len=2)
+    assert [h.shape for h in hidden] == [(2, 2), (1, 2), (1, 2)]
+    assert torch.all(kv.keys == 1) and torch.all(kv.values == 2)
+    assert torch.all(linear.conv_states[0] == 1) and torch.all(linear.recurrent_states[0] == 3)
+    assert linear.has_previous_state[0] and len(cache.layers) == 2
 
 
 def test_bearer_auth_and_request_id(monkeypatch):
